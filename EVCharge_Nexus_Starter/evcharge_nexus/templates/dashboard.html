@@ -1,0 +1,1882 @@
+
+{% extends "base.html" %}
+{% block title %}Dashboard | EVCharge Nexus{% endblock %}
+{% block content %}
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+<style>
+:root {
+  --ev-blue:#43dca5;
+  --ev-bg:#08131f;
+  --ev-panel:#0e2030;
+  --ev-panel-light:#142c3e;
+  --ev-border:#243b4d;
+  --ev-muted:#94adbd;
+  --ev-white:#f0f9fc;
+}
+body.nexus-app,
+body.nexus-app .nexus-main-shell {
+  background:var(--ev-bg)!important;
+  color:var(--ev-white);
+}
+body.nexus-app .nexus-sidebar {
+  background:#0c1b2a!important;
+  border-right:1px solid var(--ev-border);
+}
+body.nexus-app .nexus-nav-link.active {
+  background:#173e35;
+  color:#fff;
+  border-left:3px solid var(--ev-blue);
+}
+.ev-dashboard,.ev-dashboard * {box-sizing:border-box}
+.ev-dashboard {
+  background:var(--ev-bg);
+  color:var(--ev-white);
+  min-height:100vh;
+  padding:27px 28px 45px;
+  font-family:Inter,"Segoe UI",Arial,sans-serif;
+}
+.ev-dashboard a {text-decoration:none}
+.ev-wrapper {max-width:1650px;margin:auto}
+.ev-header {
+  display:flex;justify-content:space-between;
+  align-items:center;gap:20px;margin-bottom:27px;
+}
+.ev-breadcrumb {
+  font-size:11px;color:var(--ev-muted);margin-bottom:6px;
+}
+.ev-header h1 {font-size:27px;margin:0;font-weight:750}
+.ev-header-right {
+  display:flex;align-items:center;gap:15px;
+}
+.ev-search {
+  width:300px;height:43px;display:flex;align-items:center;
+  gap:12px;padding:0 16px;background:var(--ev-panel-light);
+  border:1px solid #2c4659;border-radius:30px;
+}
+.ev-search input {
+  width:100%;border:0;outline:0;background:transparent;
+  color:#fff;font:inherit;font-size:12px;
+}
+.ev-search input::placeholder {color:var(--ev-muted)}
+.ev-header-avatar {
+  width:39px;height:39px;border-radius:50%;
+  display:grid;place-items:center;background:#204c40;
+  border:2px solid #356c5b;color:#9af5d2;font-weight:750;
+  flex-shrink:0;
+}
+
+/* =========================================
+   NOTIFICATIONS
+   ========================================= */
+.ev-notification-wrapper {
+  position:relative;
+  flex-shrink:0;
+}
+.ev-notification-button {
+  width:43px;height:43px;border-radius:50%;
+  border:1px solid #365264;background:#142c3e;
+  color:#eafaf5;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;transition:.2s;
+}
+.ev-notification-button:hover,
+.ev-notification-button[aria-expanded="true"] {
+  background:#1a453c;border-color:var(--ev-blue);
+}
+.ev-notification-button svg {
+  width:20px;height:20px;stroke:currentColor;
+  fill:none;stroke-width:1.8;
+}
+.ev-notification-count {
+  position:absolute;top:-5px;right:-5px;
+  min-width:19px;height:19px;padding:0 4px;
+  border-radius:20px;background:#43dca5;
+  color:#05271c;font-size:10px;font-weight:800;
+  display:none;align-items:center;justify-content:center;
+  border:2px solid var(--ev-bg);
+}
+.ev-notification-count.visible {display:flex}
+.ev-notification-dropdown {
+  position:absolute;right:0;top:calc(100% + 14px);
+  width:min(385px,calc(100vw - 35px));
+  background:#102638;border:1px solid #345568;
+  border-radius:15px;z-index:2000;
+  box-shadow:0 18px 55px #0008;
+  overflow:hidden;
+}
+.ev-notification-dropdown[hidden] {display:none!important}
+.ev-notification-head {
+  display:flex;justify-content:space-between;
+  align-items:center;gap:12px;padding:18px;
+  border-bottom:1px solid var(--ev-border);
+}
+.ev-notification-head strong {font-size:15px}
+.ev-notification-head button {
+  background:transparent;border:0;
+  color:var(--ev-blue);font-size:11px;
+  cursor:pointer;font-weight:700;
+}
+.ev-notification-list {
+  max-height:370px;overflow-y:auto;
+}
+.ev-notification-item {
+  display:flex;gap:12px;padding:15px 17px;
+  border-bottom:1px solid #243b4d;
+  transition:background .2s;
+}
+.ev-notification-item.unread {background:#16383e}
+.ev-notification-symbol {
+  width:34px;height:34px;flex:0 0 34px;
+  border-radius:10px;background:#245047;
+  color:#71efbf;display:grid;place-items:center;
+  font-weight:800;
+}
+.ev-notification-content {flex:1;min-width:0}
+.ev-notification-title {
+  font-size:12px;font-weight:750;margin-bottom:5px;
+}
+.ev-notification-message {
+  font-size:11px;color:#b5cbd6;
+  line-height:1.6;overflow-wrap:anywhere;
+}
+.ev-notification-date {
+  color:#8aaebe;font-size:10px;margin-top:7px;
+}
+.ev-notification-dot {
+  width:7px;height:7px;border-radius:50%;
+  background:var(--ev-blue);flex-shrink:0;
+  margin-top:5px;
+}
+.ev-notification-footer {
+  display:block;text-align:center;
+  padding:14px;color:var(--ev-blue)!important;
+  font-size:12px;font-weight:750;
+  background:#0d2030;
+}
+.ev-notification-footer:hover {background:#173e35}
+.ev-notification-empty {
+  padding:28px 15px;text-align:center;
+  color:var(--ev-muted);font-size:12px;line-height:1.7;
+}
+
+/* =========================================
+   DASHBOARD LAYOUT
+   ========================================= */
+.ev-layout {
+  display:grid;
+  grid-template-columns:minmax(0,1.9fr) minmax(330px,.95fr);
+  gap:23px;align-items:start;
+}
+.ev-left,.ev-right {
+  min-width:0;display:flex;flex-direction:column;gap:22px;
+}
+.ev-card {
+  background:var(--ev-panel);
+  border:1px solid var(--ev-border);
+  border-radius:14px;padding:19px;min-width:0;
+}
+.ev-card-title,.ev-map-heading,.ev-vehicle-heading {
+  display:flex;justify-content:space-between;
+  align-items:center;gap:12px;margin-bottom:17px;
+}
+.ev-card-title h2,.ev-map-heading h2,.ev-vehicle-heading h2 {
+  font-size:17px;font-weight:700;margin:0;
+}
+.ev-card-title a {
+  color:var(--ev-blue);font-size:11px;font-weight:700;
+}
+.ev-small-button {
+  background:var(--ev-panel-light);
+  border:1px solid #2c4659;color:#c6dbe4;
+  border-radius:8px;padding:10px 12px;
+  font-size:11px;cursor:pointer;
+}
+.ev-small-button:hover {
+  border-color:var(--ev-blue);color:#fff;
+}
+.ev-map-frame {
+  height:365px;width:100%;position:relative;
+  overflow:hidden;border-radius:10px;background:#0c1b2a;
+}
+#ev-live-map {height:100%;width:100%}
+.ev-map-label {
+  position:absolute;z-index:500;bottom:14px;left:14px;
+  padding:9px 12px;background:#0c1b2aee;
+  border:1px solid var(--ev-border);border-radius:8px;
+  color:#c6dbe4;font-size:10px;
+  max-width:calc(100% - 28px);pointer-events:none;
+}
+.ev-map-footer {
+  display:flex;justify-content:space-between;
+  align-items:center;gap:12px;padding-top:14px;
+}
+.ev-map-footer p {
+  color:var(--ev-muted);font-size:11px;
+  margin:0;line-height:1.6;
+}
+.ev-primary {
+  display:inline-flex;justify-content:center;
+  align-items:center;padding:11px 15px;
+  background:var(--ev-blue);color:#06291e!important;
+  border-radius:8px;font-size:11px;
+  font-weight:800;white-space:nowrap;
+}
+.ev-primary:hover {background:#78f0c5}
+.ev-station-grid {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:17px;
+}
+.ev-station-card {
+  padding:19px;min-height:225px;background:#102432;
+  border:1px solid #294151;border-radius:12px;
+  display:flex;flex-direction:column;
+  justify-content:space-between;
+  transition:border-color .2s,transform .2s;
+}
+.ev-station-card:hover {
+  border-color:var(--ev-blue);transform:translateY(-2px);
+}
+.ev-station-card.featured {
+  border-color:var(--ev-blue);
+  box-shadow:inset 0 0 0 1px #43dca544;
+}
+.ev-station-top {
+  display:flex;justify-content:space-between;align-items:center;
+}
+.ev-station-symbol {color:var(--ev-blue);font-size:25px}
+.ev-station-arrow {color:var(--ev-blue);font-size:21px}
+.ev-station-power {
+  font-size:25px;font-weight:750;margin:13px 0 5px;
+}
+.ev-station-power span {
+  font-size:12px;color:var(--ev-muted);font-weight:500;
+}
+.ev-station-name {
+  font-size:13px;font-weight:700;margin-bottom:6px;
+  overflow-wrap:anywhere;
+}
+.ev-station-area {
+  font-size:11px;color:var(--ev-muted);
+  overflow-wrap:anywhere;line-height:1.5;
+}
+.ev-station-details {
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:9px;margin-top:15px;
+}
+.ev-station-details small {
+  display:block;color:var(--ev-muted);
+  font-size:10px;margin-bottom:5px;
+}
+.ev-station-details strong {
+  font-size:12px;font-weight:650;overflow-wrap:anywhere;
+}
+.ev-station-status.offline {color:#e8a66c}
+.ev-station-distance {
+  color:var(--ev-blue);font-size:12px;
+  font-weight:750;margin-top:9px;
+}
+.ev-directions {
+  display:inline-block;margin-top:12px;
+  padding:8px 10px;border:1px solid #3a7464;
+  border-radius:7px;color:var(--ev-blue)!important;
+  font-size:11px;font-weight:700;text-align:center;
+}
+.ev-directions:hover {background:#173e35}
+.ev-select {
+  background:var(--ev-panel-light);color:#f0f9fc;
+  border:1px solid #365264;border-radius:7px;
+  padding:9px 10px;font-size:11px;max-width:180px;
+}
+.ev-car-display {
+  height:220px;position:relative;display:flex;
+  align-items:center;justify-content:center;overflow:hidden;
+  background:radial-gradient(ellipse at center,#1b4050,#0e2030 70%);
+  border-radius:10px;margin-bottom:17px;
+}
+.ev-car-display img {
+  width:100%;height:100%;object-fit:contain;display:none;
+}
+.ev-car-placeholder {
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:12px;color:var(--ev-muted);
+  text-align:center;padding:18px;
+}
+.ev-car-placeholder svg {
+  width:min(100%,250px);height:auto;
+}
+.ev-vehicle-name {
+  font-size:21px;font-weight:750;margin-bottom:18px;
+  overflow-wrap:anywhere;
+}
+.ev-vehicle-stats {
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;margin-bottom:19px;
+}
+.ev-stat small {
+  display:block;font-size:10px;
+  color:var(--ev-muted);margin-bottom:8px;
+}
+.ev-stat strong {
+  font-size:16px;font-weight:750;overflow-wrap:anywhere;
+}
+.ev-stat .blue,.ev-mini-blue {color:var(--ev-blue)}
+.ev-vehicle-bottom {
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;
+}
+.ev-mini-card {
+  background:#102432;border:1px solid #294151;
+  border-radius:11px;padding:15px;min-height:144px;
+}
+.ev-mini-card small {
+  display:block;font-size:10px;
+  color:var(--ev-muted);margin-bottom:8px;
+}
+.ev-mini-card strong {
+  display:block;font-size:15px;
+  font-weight:750;overflow-wrap:anywhere;
+}
+.ev-progress {
+  width:100%;height:6px;border-radius:10px;
+  background:#284152;overflow:hidden;margin:14px 0 12px;
+}
+.ev-progress-fill {
+  height:100%;width:0%;border-radius:inherit;
+  background:linear-gradient(90deg,#25b5c2,#43dca5);
+  transition:width .35s;
+}
+.ev-mini-row {
+  display:flex;justify-content:space-between;
+  gap:8px;margin-top:12px;
+}
+.ev-mini-row span {
+  font-size:10px;color:var(--ev-muted);
+}
+.ev-mini-row b {font-size:11px}
+.ev-energy-heading small {
+  display:block;color:var(--ev-muted);
+  font-size:11px;margin-bottom:7px;
+}
+.ev-energy-heading strong {font-size:25px;font-weight:750}
+.ev-energy-heading strong span:last-child {
+  font-size:12px;color:var(--ev-muted);
+}
+.ev-energy-chart {
+  width:100%;height:100px;display:block;margin-top:15px;
+}
+.ev-energy-note,.ev-note {
+  color:var(--ev-muted);font-size:10px;
+  line-height:1.7;margin-top:12px;
+}
+.ev-reservation-item {
+  background:#102432;border:1px solid #294151;
+  border-radius:10px;padding:14px;margin-bottom:10px;
+}
+.ev-reservation-name {
+  font-size:13px;font-weight:700;margin-bottom:7px;
+}
+.ev-reservation-date {
+  color:var(--ev-muted);font-size:11px;line-height:1.7;
+}
+.ev-reservation-status {
+  display:inline-block;font-size:10px;color:#6cdbac;
+  background:#173b2e;padding:5px 9px;border-radius:20px;
+  margin-top:10px;text-transform:capitalize;
+}
+.ev-reservation-status.cancelled {
+  color:#ffb1b1;background:#402323;
+}
+.ev-empty {
+  padding:18px 8px;color:var(--ev-muted);
+  font-size:12px;line-height:1.8;text-align:center;
+}
+
+@media(max-width:1050px) {
+  .ev-layout {grid-template-columns:1fr}
+  .ev-right {
+    display:grid;grid-template-columns:1fr 1fr;align-items:start;
+  }
+  .ev-vehicle-panel {grid-row:span 2}
+}
+@media(max-width:700px) {
+  .ev-dashboard {padding:20px}
+  .ev-header {flex-wrap:wrap}
+  .ev-header-right {width:100%}
+  .ev-search {width:100%;flex:1;min-width:0}
+  .ev-right {display:flex}
+  .ev-station-grid {grid-template-columns:1fr}
+  .ev-station-card {min-height:195px}
+  .ev-map-frame {height:320px}
+  .ev-map-footer {flex-wrap:wrap}
+}
+@media(max-width:480px) {
+  .ev-dashboard {padding:15px 12px}
+  .ev-header h1 {font-size:23px}
+  .ev-card {padding:14px}
+  .ev-map-frame {height:290px}
+  .ev-car-display {height:185px}
+  .ev-vehicle-bottom {gap:8px}
+  .ev-mini-card {padding:11px}
+  .ev-notification-dropdown {
+    position:fixed;top:105px;right:12px;
+    width:calc(100vw - 24px);
+  }
+}
+</style>
+
+<div class="ev-dashboard">
+<div class="ev-wrapper">
+
+  <!-- DASHBOARD HEADER -->
+  <header class="ev-header">
+    <div>
+      <div class="ev-breadcrumb">Pages / Dashboard</div>
+      <h1>Dashboard</h1>
+    </div>
+
+    <div class="ev-header-right">
+      <form class="ev-search"
+            action="{{ url_for('station_map') }}"
+            method="get">
+        <span>⌕</span>
+        <input type="search" name="q"
+               placeholder="Search charging stations..."
+               aria-label="Search charging stations">
+      </form>
+
+      <!-- NEW: NOTIFICATION BELL -->
+      <div class="ev-notification-wrapper"
+           id="ev-notification-wrapper">
+
+        <button type="button"
+                class="ev-notification-button"
+                id="ev-notification-toggle"
+                aria-label="Open notifications"
+                aria-expanded="false"
+                aria-controls="ev-notification-dropdown">
+
+          <svg viewBox="0 0 24 24"
+               stroke-linecap="round"
+               stroke-linejoin="round"
+               aria-hidden="true">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
+            <path d="M10 21h4"/>
+          </svg>
+
+          <span class="ev-notification-count"
+                id="ev-notification-count">0</span>
+        </button>
+
+        <div class="ev-notification-dropdown"
+             id="ev-notification-dropdown"
+             hidden>
+
+          <div class="ev-notification-head">
+            <strong>Notifications</strong>
+            <button type="button"
+                    id="ev-notification-read-all">
+              Mark all read
+            </button>
+          </div>
+
+          <div class="ev-notification-list"
+               id="ev-notification-list">
+            <div class="ev-notification-empty">
+              Loading notifications...
+            </div>
+          </div>
+
+          <a class="ev-notification-footer"
+             href="{{ url_for('notifications.notifications_page') }}">
+            View All Notifications →
+          </a>
+        </div>
+      </div>
+
+      <div class="ev-header-avatar">
+        {{ (current_user_name or 'U')[0] | upper }}
+      </div>
+    </div>
+  </header>
+
+  <div class="ev-layout">
+
+    <!-- LEFT COLUMN -->
+    <div class="ev-left">
+
+      <!-- CHARGING MAP -->
+      <section class="ev-card">
+        <div class="ev-map-heading">
+          <h2>⚡ Explore Charging Stations</h2>
+          <button type="button"
+                  class="ev-small-button"
+                  id="ev-locate-button">
+            My Location
+          </button>
+        </div>
+
+        <div class="ev-map-frame">
+          <div id="ev-live-map"></div>
+          <div class="ev-map-label"
+               id="ev-map-message">
+            Finding charging stations...
+          </div>
+        </div>
+
+        <div class="ev-map-footer">
+          <p>
+            Explore real charging station locations.
+            Distance is measured from your GPS position.
+          </p>
+          <a class="ev-primary"
+             href="{{ url_for('station_map') }}">
+            Open Station Map →
+          </a>
+        </div>
+      </section>
+
+      <!-- NEAREST STATIONS -->
+      <div class="ev-station-grid"
+           id="ev-real-stations"
+           aria-live="polite">
+        <article class="ev-station-card">
+          <div>
+            <div class="ev-station-symbol">⚡</div>
+            <div class="ev-station-name">
+              Finding nearby charging stations...
+            </div>
+            <div class="ev-station-area">
+              Loading station information.
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <!-- RECENT RESERVATIONS -->
+      <section class="ev-card">
+        <div class="ev-card-title">
+          <h2>Recent Reservations</h2>
+          <a href="{{ url_for('reservations_backend.my_reservations_page') }}">
+            View All →
+          </a>
+        </div>
+        <div id="ev-recent-reservations">
+          <div class="ev-empty">Loading reservations...</div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="ev-right">
+
+      <!-- VEHICLE PANEL -->
+      <section class="ev-card ev-vehicle-panel">
+
+        <div class="ev-vehicle-heading">
+          <h2>Vehicle Stats</h2>
+          {% if vehicles %}
+          <select class="ev-select"
+                  id="ev-vehicle-select"
+                  aria-label="Select vehicle">
+            {% for vehicle in vehicles %}
+            <option value="{{ vehicle.id }}">
+              {{ vehicle.manufacturer }} {{ vehicle.model }}
+            </option>
+            {% endfor %}
+          </select>
+          {% endif %}
+        </div>
+
+        <div class="ev-car-display">
+          <img id="ev-car-photo" alt="Selected vehicle">
+
+          <div class="ev-car-placeholder"
+               id="ev-car-placeholder">
+
+            <svg viewBox="0 0 320 160" fill="none"
+                 xmlns="http://www.w3.org/2000/svg">
+              <path d="M34 98 68 87 101 51Q111 40 130 40h81q22 0 35 16l30 30 18 12q8 5 8 15v16H18v-17q0-10 16-14Z"
+                    fill="#315a66" stroke="#8ac9b6"
+                    stroke-width="3"/>
+              <path d="m107 55-26 34h161l-31-34Z"
+                    fill="#0c2431" stroke="#6caaa0"
+                    stroke-width="2"/>
+              <path d="M169 55v34"
+                    stroke="#6caaa0" stroke-width="3"/>
+              <circle cx="82" cy="127" r="26"
+                      fill="#08131f" stroke="#8ac9b6"
+                      stroke-width="5"/>
+              <circle cx="82" cy="127" r="12"
+                      fill="#43dca5"/>
+              <circle cx="245" cy="127" r="26"
+                      fill="#08131f" stroke="#8ac9b6"
+                      stroke-width="5"/>
+              <circle cx="245" cy="127" r="12"
+                      fill="#43dca5"/>
+            </svg>
+
+            <span id="ev-photo-message">
+              Loading vehicle...
+            </span>
+          </div>
+        </div>
+
+        {% if vehicles %}
+        <div class="ev-vehicle-name"
+             id="ev-vehicle-name">--</div>
+
+        <div class="ev-vehicle-stats">
+          <div class="ev-stat">
+            <small>EV</small>
+            <strong id="ev-vehicle-brand">--</strong>
+          </div>
+          <div class="ev-stat">
+            <small>Battery</small>
+            <strong class="blue"
+                    id="ev-battery">--%</strong>
+          </div>
+          <div class="ev-stat">
+            <small>Capacity</small>
+            <strong id="ev-capacity">-- kWh</strong>
+          </div>
+        </div>
+
+        <div class="ev-vehicle-bottom">
+          <div class="ev-mini-card">
+            <small>Battery Status</small>
+            <strong class="ev-mini-blue"
+                    id="ev-battery-status">--</strong>
+            <div class="ev-progress">
+              <div class="ev-progress-fill"
+                   id="ev-battery-progress"></div>
+            </div>
+            <div class="ev-mini-row">
+              <span>Current</span>
+              <b id="ev-current-soc">--%</b>
+            </div>
+            <div class="ev-mini-row">
+              <span>Target</span>
+              <b id="ev-target-soc">--%</b>
+            </div>
+          </div>
+
+          <div class="ev-mini-card">
+            <small>Charging Details</small>
+            <strong id="ev-connector">--</strong>
+            <div class="ev-mini-row">
+              <span>Energy needed</span>
+            </div>
+            <strong class="ev-mini-blue"
+                    id="ev-energy-needed"
+                    style="margin-top:7px">
+              -- kWh
+            </strong>
+          </div>
+        </div>
+        {% else %}
+        <div class="ev-empty">
+          No registered vehicles yet.
+          <div style="margin-top:15px">
+            <a class="ev-primary"
+               href="{{ url_for('vehicles') }}">
+              Add Vehicle
+            </a>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="ev-note">
+          Battery readings use saved vehicle information.
+        </div>
+      </section>
+
+      <!-- ENERGY CHART -->
+      <section class="ev-card">
+        <div class="ev-energy-heading">
+          <small>Charging Energy Required</small>
+          <strong>
+            <span id="ev-chart-energy">--</span>
+            <span>kWh</span>
+          </strong>
+        </div>
+
+        <svg class="ev-energy-chart"
+             viewBox="0 0 320 100"
+             preserveAspectRatio="none"
+             role="img"
+             aria-label="Battery charge comparison">
+
+          <rect x="12" y="22" width="296" height="18"
+                rx="9" fill="#284152"/>
+          <rect id="ev-chart-current"
+                x="12" y="22" width="0" height="18"
+                rx="9" fill="#43dca5"/>
+          <rect x="12" y="56" width="296" height="18"
+                rx="9" fill="#284152"/>
+          <rect id="ev-chart-target"
+                x="12" y="56" width="0" height="18"
+                rx="9" fill="#25b5c2"/>
+
+          <text x="12" y="14" fill="#a5bfcb"
+                font-size="10">Current battery</text>
+          <text x="12" y="51" fill="#a5bfcb"
+                font-size="10">Target battery</text>
+        </svg>
+
+        <div class="ev-energy-note">
+          Calculated from your selected vehicle's
+          saved battery capacity and charge levels.
+        </div>
+      </section>
+
+      <!-- NEXT CHARGING SESSION -->
+      <section class="ev-card">
+        <div class="ev-card-title">
+          <h2>Next Charging Session</h2>
+          <a href="{{ url_for('reservations') }}">
+            Book Now →
+          </a>
+        </div>
+
+        <div id="ev-next-reservation">
+          <div class="ev-empty">
+            Checking upcoming reservations...
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+(() => {
+  "use strict";
+
+  const vehicles = {{ vehicles | tojson }};
+  const stationMapUrl = {{ url_for('station_map') | tojson }};
+  const stationApiUrl = "/api/charging-stations?city=Karachi";
+  const reservationApiUrl = "/api/reservations";
+  const notificationApiUrl = "/api/notifications";
+
+  const $ = id => document.getElementById(id);
+
+  let map = null;
+  let stationLayer = null;
+  let userMarker = null;
+  let allStations = [];
+  let userLocation = null;
+  let locationState = "pending";
+  let notificationRecords = [];
+
+  function setText(id, value) {
+    const node = $(id);
+    if (node) node.textContent = String(value);
+  }
+
+  function el(tag, className = "", text = null) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== null) node.textContent = String(text);
+    return node;
+  }
+
+  /* =========================================
+     NOTIFICATION SYSTEM
+     ========================================= */
+
+  function notificationDate(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+
+    return date.toLocaleString("en-PK", {
+      timeZone: "Asia/Karachi",
+      dateStyle: "medium",
+      timeStyle: "short"
+    });
+  }
+
+  function notificationIcon(kind) {
+    if (kind === "confirmed") return "✓";
+    if (kind === "cancelled") return "×";
+    if (kind === "reminder") return "⏰";
+    return "•";
+  }
+
+  function renderNotifications() {
+    const list = $("ev-notification-list");
+    const badge = $("ev-notification-count");
+    const readAll = $("ev-notification-read-all");
+
+    if (!list || !badge) return;
+
+    const unread = notificationRecords.filter(
+      item => !item.is_read
+    ).length;
+
+    badge.textContent = unread > 99 ? "99+" : String(unread);
+    badge.classList.toggle("visible", unread > 0);
+
+    if (readAll) readAll.disabled = unread === 0;
+
+    list.replaceChildren();
+
+    if (!notificationRecords.length) {
+      list.append(
+        el("div", "ev-notification-empty",
+           "You're all caught up. No notifications yet.")
+      );
+      return;
+    }
+
+    notificationRecords.slice(0, 5).forEach(item => {
+      const card = el(
+        "div",
+        "ev-notification-item" +
+          (item.is_read ? "" : " unread")
+      );
+
+      const symbol = el(
+        "div",
+        "ev-notification-symbol",
+        notificationIcon(item.kind)
+      );
+
+      const content = el("div", "ev-notification-content");
+
+      content.append(
+        el("div", "ev-notification-title", item.title),
+        el("div", "ev-notification-message", item.message),
+        el("div", "ev-notification-date",
+           notificationDate(item.created_at))
+      );
+
+      card.append(symbol, content);
+
+      if (!item.is_read) {
+        card.append(el("span", "ev-notification-dot"));
+
+        card.style.cursor = "pointer";
+        card.title = "Click to mark as read";
+
+        card.addEventListener("click", async () => {
+          try {
+            const response = await fetch(
+              `/api/notifications/${item.id}/read`,
+              {
+                method: "POST",
+                credentials: "same-origin",
+                headers: {
+                  "Content-Type": "application/json"
+                },
+                body: "{}"
+              }
+            );
+
+            if (!response.ok) {
+              throw new Error("Unable to mark as read");
+            }
+
+            item.is_read = 1;
+            renderNotifications();
+
+          } catch (error) {
+            console.error(error);
+          }
+        });
+      }
+
+      list.append(card);
+    });
+  }
+
+  async function loadNotifications() {
+    try {
+      const response = await fetch(notificationApiUrl, {
+        credentials: "same-origin",
+        headers: { Accept: "application/json" }
+      });
+
+      if (!response.ok) {
+        throw new Error("Notification API unavailable");
+      }
+
+      const data = await response.json();
+
+      notificationRecords = Array.isArray(data.notifications)
+        ? data.notifications
+        : [];
+
+      renderNotifications();
+
+    } catch (error) {
+      console.error("Notification error:", error);
+
+      const list = $("ev-notification-list");
+
+      if (list) {
+        list.replaceChildren(
+          el("div", "ev-notification-empty",
+             "Unable to load notifications.")
+        );
+      }
+    }
+  }
+
+  function initializeNotifications() {
+    const toggle = $("ev-notification-toggle");
+    const dropdown = $("ev-notification-dropdown");
+    const wrapper = $("ev-notification-wrapper");
+    const readAll = $("ev-notification-read-all");
+
+    if (!toggle || !dropdown || !wrapper) return;
+
+    toggle.addEventListener("click", () => {
+      const opening = dropdown.hidden;
+      dropdown.hidden = !opening;
+
+      toggle.setAttribute(
+        "aria-expanded",
+        String(opening)
+      );
+
+      if (opening) loadNotifications();
+    });
+
+    document.addEventListener("click", event => {
+      if (!wrapper.contains(event.target)) {
+        dropdown.hidden = true;
+        toggle.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") {
+        dropdown.hidden = true;
+        toggle.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    if (readAll) {
+      readAll.addEventListener("click", async () => {
+        readAll.disabled = true;
+
+        try {
+          const response = await fetch(
+            "/api/notifications/read-all",
+            {
+              method: "POST",
+              credentials: "same-origin",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: "{}"
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error("Unable to update notifications");
+          }
+
+          notificationRecords.forEach(item => {
+            item.is_read = 1;
+          });
+
+          renderNotifications();
+
+        } catch (error) {
+          console.error(error);
+          readAll.disabled = false;
+        }
+      });
+    }
+
+    loadNotifications();
+
+    // Refresh while dashboard is open.
+    setInterval(() => {
+      if (!document.hidden) loadNotifications();
+    }, 60000);
+  }
+
+  /* =========================================
+     STATION LOCATION AND DISTANCE
+     ========================================= */
+
+  function validCoordinates(lat, lng) {
+    return lat !== null && lng !== null &&
+      lat !== "" && lng !== "" &&
+      Number.isFinite(Number(lat)) &&
+      Number.isFinite(Number(lng)) &&
+      Number(lat) >= -90 && Number(lat) <= 90 &&
+      Number(lng) >= -180 && Number(lng) <= 180;
+  }
+
+  function distanceKm(lat1, lon1, lat2, lon2) {
+    const rad = degrees => degrees * Math.PI / 180;
+    const earthRadiusKm = 6371;
+
+    const deltaLat = rad(lat2 - lat1);
+    const deltaLon = rad(lon2 - lon1);
+
+    const a =
+      Math.sin(deltaLat / 2) ** 2 +
+      Math.cos(rad(lat1)) *
+      Math.cos(rad(lat2)) *
+      Math.sin(deltaLon / 2) ** 2;
+
+    return 2 * earthRadiusKm *
+      Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function calculateStationDistance(station) {
+    if (!userLocation ||
+        !validCoordinates(station.lat, station.lng)) {
+      return null;
+    }
+
+    return distanceKm(
+      userLocation.lat,
+      userLocation.lng,
+      Number(station.lat),
+      Number(station.lng)
+    );
+  }
+
+  function formatDistance(km) {
+    if (km === null || !Number.isFinite(km)) {
+      return "Distance unavailable";
+    }
+
+    return km < 1
+      ? Math.round(km * 1000) + " m away"
+      : km.toFixed(1) + " km away";
+  }
+
+  /* =========================================
+     STATION CARDS
+     ========================================= */
+
+  function createStationCard(station, index) {
+    const card = el(
+      "article",
+      "ev-station-card" + (index === 0 ? " featured" : "")
+    );
+
+    const content = el("div");
+    const top = el("div", "ev-station-top");
+
+    top.append(
+      el("span", "ev-station-symbol", "⚡"),
+      el("span", "ev-station-arrow", "↗")
+    );
+
+    const power = el("div", "ev-station-power");
+
+    if (station.power_kw != null) {
+      power.append(
+        document.createTextNode(
+          String(station.power_kw) + " "
+        ),
+        el("span", "", "kW")
+      );
+    } else {
+      power.textContent = "Power not listed";
+      power.style.fontSize = "17px";
+    }
+
+    content.append(
+      top,
+      power,
+      el("div", "ev-station-name",
+         station.name || "EV Charging Station"),
+      el("div", "ev-station-area",
+         station.address || station.city ||
+         "Address not listed")
+    );
+
+    const distance = calculateStationDistance(station);
+
+    content.append(
+      el(
+        "div",
+        "ev-station-distance",
+        userLocation
+          ? "📍 " + formatDistance(distance)
+          : "📍 Location not available"
+      )
+    );
+
+    const details = el("div", "ev-station-details");
+    const connectorBlock = el("div");
+
+    const connectorText =
+      Array.isArray(station.connectors) &&
+      station.connectors.length
+        ? station.connectors.join(", ")
+        : "Not listed";
+
+    connectorBlock.append(
+      el("small", "", "Connector"),
+      el("strong", "", connectorText)
+    );
+
+    const statusBlock = el("div");
+
+    statusBlock.append(
+      el("small", "", "Live availability"),
+      el("strong", "ev-station-status offline", "Not verified")
+    );
+
+    details.append(connectorBlock, statusBlock);
+
+    const footer = el("div");
+    footer.append(details);
+
+    if (validCoordinates(station.lat, station.lng)) {
+      const directions = el(
+        "a", "ev-directions", "Directions ↗"
+      );
+
+      directions.href =
+        "https://www.google.com/maps/dir/?api=1" +
+        "&destination=" +
+        encodeURIComponent(
+          Number(station.lat) + "," + Number(station.lng)
+        );
+
+      directions.target = "_blank";
+      directions.rel = "noopener noreferrer";
+      footer.append(directions);
+
+    } else {
+      const openMap = el(
+        "a", "ev-directions", "View Station Map ↗"
+      );
+
+      openMap.href = stationMapUrl;
+      footer.append(openMap);
+    }
+
+    card.append(content, footer);
+    return card;
+  }
+
+  function renderNearestStations() {
+    const container = $("ev-real-stations");
+    if (!container) return;
+
+    if (!allStations.length) {
+      container.replaceChildren(
+        el("div", "ev-empty",
+           "No charging stations were returned by the API.")
+      );
+      return;
+    }
+
+    const ordered = [...allStations];
+
+    if (userLocation) {
+      ordered.sort((a, b) => {
+        const da = calculateStationDistance(a);
+        const db = calculateStationDistance(b);
+
+        if (da === null) return 1;
+        if (db === null) return -1;
+
+        return da - db;
+      });
+    }
+
+    container.replaceChildren(
+      ...ordered.slice(0, 3).map(createStationCard)
+    );
+
+    if (userLocation) {
+      setText(
+        "ev-map-message",
+        "Showing 3 nearest stations from your GPS location."
+      );
+    } else if (locationState === "pending") {
+      setText(
+        "ev-map-message",
+        "Station results loaded. Waiting for GPS location..."
+      );
+    } else {
+      setText(
+        "ev-map-message",
+        "Showing Karachi station results. Enable location for nearest stations."
+      );
+    }
+  }
+
+  async function loadRealStations() {
+    try {
+      const response = await fetch(stationApiUrl, {
+        credentials: "same-origin",
+        headers: { Accept: "application/json" }
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          "Station API returned " + response.status
+        );
+      }
+
+      const data = await response.json();
+
+      allStations = Array.isArray(data.stations)
+        ? data.stations
+        : [];
+
+      renderNearestStations();
+      updateMapMarkers();
+
+    } catch (error) {
+      console.error("Station loading failed:", error);
+
+      const container = $("ev-real-stations");
+
+      if (container) {
+        container.replaceChildren(
+          el("div", "ev-empty",
+             "Unable to load charging stations. Please try again.")
+        );
+      }
+
+      setText(
+        "ev-map-message",
+        "Charging station service unavailable."
+      );
+    }
+  }
+
+  /* =========================================
+     LEAFLET MAP
+     ========================================= */
+
+  function initializeMap() {
+    if (!$("ev-live-map")) return;
+
+    if (typeof L === "undefined") {
+      setText(
+        "ev-map-message",
+        "Map library unavailable."
+      );
+      return;
+    }
+
+    map = L.map("ev-live-map", {
+      zoomControl: false
+    }).setView([24.8607, 67.0011], 11);
+
+    L.tileLayer(
+      "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors"
+      }
+    ).addTo(map);
+
+    L.control.zoom({
+      position: "bottomright"
+    }).addTo(map);
+
+    stationLayer = L.layerGroup().addTo(map);
+
+    setTimeout(() => map.invalidateSize(), 250);
+
+    window.addEventListener(
+      "resize",
+      () => map.invalidateSize()
+    );
+
+    const locateButton = $("ev-locate-button");
+
+    if (locateButton) {
+      locateButton.addEventListener(
+        "click",
+        () => requestUserLocation(true)
+      );
+    }
+  }
+
+  function updateMapMarkers() {
+    if (!map || !stationLayer) return;
+
+    stationLayer.clearLayers();
+
+    allStations.forEach(station => {
+      if (!validCoordinates(station.lat, station.lng)) {
+        return;
+      }
+
+      const lat = Number(station.lat);
+      const lng = Number(station.lng);
+
+      const marker = L.circleMarker(
+        [lat, lng],
+        {
+          radius: 7,
+          color: "#08131f",
+          weight: 2,
+          fillColor: "#43dca5",
+          fillOpacity: 0.95
+        }
+      );
+
+      const popup = el("div");
+
+      popup.append(
+        el("strong", "",
+           station.name || "EV Charging Station"),
+        el("p", "",
+           station.address || "Address not listed"),
+        el("p", "",
+           station.power_kw != null
+             ? station.power_kw + " kW"
+             : "Power not listed"),
+        el("p", "", "Availability: Not verified")
+      );
+
+      const km = calculateStationDistance(station);
+
+      if (km !== null) {
+        popup.append(
+          el("p", "", "Distance: " + formatDistance(km))
+        );
+      }
+
+      const link = el("a", "", "Get Directions");
+
+      link.href =
+        "https://www.google.com/maps/dir/?api=1" +
+        "&destination=" +
+        encodeURIComponent(lat + "," + lng);
+
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+
+      popup.append(link);
+
+      marker.bindPopup(popup);
+      marker.addTo(stationLayer);
+    });
+  }
+
+  /* =========================================
+     GPS LOCATION
+     ========================================= */
+
+  function requestUserLocation(centerMap = false) {
+    if (!navigator.geolocation) {
+      locationState = "unavailable";
+      renderNearestStations();
+      return;
+    }
+
+    if (centerMap) {
+      setText(
+        "ev-map-message",
+        "Requesting your current location..."
+      );
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        userLocation = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+
+        locationState = "available";
+
+        if (map) {
+          if (userMarker) {
+            map.removeLayer(userMarker);
+          }
+
+          userMarker = L.circleMarker(
+            [userLocation.lat, userLocation.lng],
+            {
+              radius: 9,
+              color: "#ffffff",
+              weight: 2,
+              fillColor: "#25b5c2",
+              fillOpacity: 1
+            }
+          ).addTo(map);
+
+          userMarker.bindPopup(
+            "Your Current Location"
+          );
+
+          if (centerMap) {
+            map.setView(
+              [userLocation.lat, userLocation.lng],
+              13
+            );
+
+            userMarker.openPopup();
+          }
+        }
+
+        renderNearestStations();
+        updateMapMarkers();
+      },
+      error => {
+        console.warn(
+          "GPS unavailable:",
+          error.message
+        );
+
+        locationState = "unavailable";
+        renderNearestStations();
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 60000
+      }
+    );
+  }
+
+  /* =========================================
+     VEHICLE STATISTICS
+     ========================================= */
+
+  function numeric(value) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function clamp(value) {
+    return Math.max(
+      0,
+      Math.min(100, numeric(value))
+    );
+  }
+
+  function updateVehicle(id) {
+    const vehicle = vehicles.find(
+      v => String(v.id) === String(id)
+    );
+
+    if (!vehicle) return;
+
+    const brand = vehicle.manufacturer || "";
+    const model = vehicle.model || "";
+
+    const current = clamp(vehicle.current_soc);
+    const target = clamp(vehicle.target_soc);
+    const capacity = numeric(vehicle.battery_kwh);
+
+    const energy = Math.max(
+      0,
+      capacity * (target - current) / 100
+    );
+
+    setText(
+      "ev-vehicle-name",
+      `${brand} ${model}`.trim()
+    );
+
+    setText("ev-vehicle-brand", brand);
+    setText("ev-battery", current + "%");
+    setText("ev-capacity", capacity.toFixed(1) + " kWh");
+    setText("ev-current-soc", current + "%");
+    setText("ev-target-soc", target + "%");
+    setText("ev-energy-needed", energy.toFixed(1) + " kWh");
+    setText("ev-chart-energy", energy.toFixed(1));
+    setText("ev-connector", vehicle.connector || "--");
+
+    const status =
+      current >= 80 ? "Well Charged" :
+      current >= 40 ? "Moderate" :
+      "Low Charge";
+
+    setText("ev-battery-status", status);
+
+    const progress = $("ev-battery-progress");
+
+    if (progress) {
+      progress.style.width = current + "%";
+    }
+
+    const currentBar = $("ev-chart-current");
+    const targetBar = $("ev-chart-target");
+
+    if (currentBar) {
+      currentBar.setAttribute(
+        "width",
+        String(296 * current / 100)
+      );
+    }
+
+    if (targetBar) {
+      targetBar.setAttribute(
+        "width",
+        String(296 * target / 100)
+      );
+    }
+
+    try {
+      localStorage.setItem(
+        "evn_selected_vehicle",
+        String(vehicle.id)
+      );
+    } catch (error) {}
+
+    loadVehiclePhoto(brand, model);
+  }
+
+  /* =========================================
+     VEHICLE PHOTOGRAPH
+     ========================================= */
+
+  let photoRequest = 0;
+
+  async function loadVehiclePhoto(brand, model) {
+    const requestId = ++photoRequest;
+
+    const img = $("ev-car-photo");
+    const placeholder = $("ev-car-placeholder");
+
+    if (!img || !placeholder) return;
+
+    img.style.display = "none";
+    img.removeAttribute("src");
+    placeholder.style.display = "flex";
+
+    setText(
+      "ev-photo-message",
+      `Searching for ${brand} ${model} photograph...`
+    );
+
+    try {
+      const query = `${brand} ${model}`.trim();
+
+      if (!query) throw new Error("Missing model");
+
+      const api = new URL(
+        "https://en.wikipedia.org/w/api.php"
+      );
+
+      api.searchParams.set("action", "query");
+      api.searchParams.set("generator", "search");
+      api.searchParams.set("gsrsearch", query);
+      api.searchParams.set("gsrlimit", "10");
+      api.searchParams.set("prop", "pageimages");
+      api.searchParams.set("piprop", "thumbnail");
+      api.searchParams.set("pithumbsize", "900");
+      api.searchParams.set("format", "json");
+      api.searchParams.set("origin", "*");
+
+      const response = await fetch(api.toString());
+
+      if (!response.ok) {
+        throw new Error("Photo service unavailable");
+      }
+
+      const data = await response.json();
+
+      if (requestId !== photoRequest) return;
+
+      const pages = Object.values(
+        data.query?.pages || {}
+      );
+
+      const terms = query.toLowerCase().split(/\s+/);
+
+      const match = pages.find(page => {
+        const title = String(
+          page.title || ""
+        ).toLowerCase();
+
+        return page.thumbnail?.source &&
+          terms.every(term => title.includes(term));
+      });
+
+      if (!match) {
+        throw new Error("No matching photo");
+      }
+
+      const photo = new Image();
+
+      photo.onload = () => {
+        if (requestId !== photoRequest) return;
+
+        img.src = match.thumbnail.source;
+        img.alt = `${brand} ${model}`;
+        img.style.display = "block";
+        placeholder.style.display = "none";
+      };
+
+      photo.onerror = () => {
+        if (requestId !== photoRequest) return;
+
+        setText(
+          "ev-photo-message",
+          "Vehicle photograph unavailable."
+        );
+      };
+
+      photo.src = match.thumbnail.source;
+
+    } catch (error) {
+      if (requestId !== photoRequest) return;
+
+      setText(
+        "ev-photo-message",
+        `No matching photograph found for ${brand} ${model}.`
+      );
+    }
+  }
+
+  function initializeVehicles() {
+    const select = $("ev-vehicle-select");
+
+    if (!select || !vehicles.length) {
+      setText(
+        "ev-photo-message",
+        "Add a vehicle to display its details."
+      );
+      return;
+    }
+
+    let saved = null;
+
+    try {
+      saved = localStorage.getItem(
+        "evn_selected_vehicle"
+      );
+    } catch (error) {}
+
+    const selected = vehicles.find(
+      v => String(v.id) === String(saved)
+    ) || vehicles[0];
+
+    select.value = String(selected.id);
+
+    updateVehicle(selected.id);
+
+    select.addEventListener("change", () => {
+      updateVehicle(select.value);
+    });
+  }
+
+  /* =========================================
+     RESERVATION HISTORY
+     ========================================= */
+
+  function parseDate(value) {
+    if (!value) return null;
+
+    let raw = String(value).trim().replace(" ", "T");
+
+    if (
+      !/[zZ]$/.test(raw) &&
+      !/[+-]\d{2}:\d{2}$/.test(raw)
+    ) {
+      raw += "+05:00";
+    }
+
+    const date = new Date(raw);
+
+    return Number.isNaN(date.getTime())
+      ? null
+      : date;
+  }
+
+  function formatDate(value) {
+    const date = parseDate(value);
+
+    if (!date) return "Date unavailable";
+
+    return date.toLocaleString("en-PK", {
+      timeZone: "Asia/Karachi",
+      dateStyle: "medium",
+      timeStyle: "short"
+    });
+  }
+
+  function reservationCard(booking) {
+    const card = el("div", "ev-reservation-item");
+
+    card.append(
+      el(
+        "div",
+        "ev-reservation-name",
+        booking.station_name ||
+        booking.station ||
+        "Charging Station"
+      ),
+      el(
+        "div",
+        "ev-reservation-date",
+        formatDate(
+          booking.start_at ||
+          booking.start_time ||
+          booking.date
+        )
+      )
+    );
+
+    const status = String(
+      booking.status || "Pending"
+    );
+
+    const statusNode = el(
+      "span",
+      "ev-reservation-status",
+      status
+    );
+
+    if (status.toLowerCase() === "cancelled") {
+      statusNode.classList.add("cancelled");
+    }
+
+    card.append(statusNode);
+    return card;
+  }
+
+  function showEmpty(id, message) {
+    const container = $(id);
+
+    if (container) {
+      container.replaceChildren(
+        el("div", "ev-empty", message)
+      );
+    }
+  }
+
+  async function initializeReservations() {
+    try {
+      const response = await fetch(reservationApiUrl, {
+        credentials: "same-origin",
+        headers: { Accept: "application/json" }
+      });
+
+      if (!response.ok) {
+        throw new Error("Reservation API unavailable");
+      }
+
+      const result = await response.json();
+
+      const bookings = Array.isArray(result)
+        ? result
+        : Array.isArray(result.reservations)
+          ? result.reservations
+          : Array.isArray(result.bookings)
+            ? result.bookings
+            : [];
+
+      const recent = $("ev-recent-reservations");
+
+      if (recent) {
+        if (bookings.length) {
+          recent.replaceChildren(
+            ...bookings.slice(0, 3).map(reservationCard)
+          );
+        } else {
+          showEmpty(
+            "ev-recent-reservations",
+            "No reservations found."
+          );
+        }
+      }
+
+      const upcoming = bookings
+        .filter(booking => {
+          const status = String(
+            booking.status || ""
+          ).toLowerCase();
+
+          const date = parseDate(
+            booking.start_at ||
+            booking.start_time ||
+            booking.date
+          );
+
+          return date &&
+            date.getTime() >= Date.now() &&
+            status !== "cancelled";
+        })
+        .sort((a, b) => {
+          const aDate = parseDate(
+            a.start_at || a.start_time || a.date
+          );
+
+          const bDate = parseDate(
+            b.start_at || b.start_time || b.date
+          );
+
+          return aDate - bDate;
+        });
+
+      const next = $("ev-next-reservation");
+
+      if (next) {
+        if (upcoming.length) {
+          next.replaceChildren(
+            reservationCard(upcoming[0])
+          );
+        } else {
+          showEmpty(
+            "ev-next-reservation",
+            "No upcoming charging sessions."
+          );
+        }
+      }
+
+    } catch (error) {
+      console.error("Reservation error:", error);
+
+      showEmpty(
+        "ev-recent-reservations",
+        "Could not load reservations."
+      );
+
+      showEmpty(
+        "ev-next-reservation",
+        "Could not load upcoming sessions."
+      );
+    }
+  }
+
+  /* =========================================
+     INITIALIZE DASHBOARD
+     ========================================= */
+
+  function startDashboard() {
+    initializeVehicles();
+    initializeMap();
+
+    loadRealStations();
+    requestUserLocation(false);
+
+    initializeReservations();
+
+    // NEW: Start notification system
+    initializeNotifications();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener(
+      "DOMContentLoaded",
+      startDashboard
+    );
+  } else {
+    startDashboard();
+  }
+
+})();
+</script>
+
+{% endblock %}

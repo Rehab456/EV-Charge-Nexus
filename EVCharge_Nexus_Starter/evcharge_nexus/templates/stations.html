@@ -1,0 +1,758 @@
+
+{% extends "base.html" %}
+
+{% block title %}
+Explore EV Charging · EVCharge Nexus
+{% endblock %}
+
+{% block content %}
+
+<link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+>
+
+<style>
+    .nexus-compare-btn,
+    .nexus-main-btn,
+    .nexus-secondary-btn {
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 12px;
+    }
+
+    .nexus-compare-btn {
+        border: 1px solid #16a34a;
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .nexus-compare-btn[aria-pressed="true"] {
+        background: #16a34a;
+        color: white;
+    }
+
+    .nexus-main-btn {
+        background: #16a34a;
+        border: 0;
+        color: white;
+    }
+
+    .nexus-main-btn:disabled {
+        opacity: .5;
+        cursor: not-allowed;
+    }
+
+    .nexus-secondary-btn {
+        background: #e2e8f0;
+        color: #17212b;
+        border: 0;
+    }
+
+    .station-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+    }
+
+    .station-card {
+        cursor: default;
+    }
+
+    .station-card p {
+        margin: 7px 0;
+    }
+
+    .nexus-compare-bar {
+        position: absolute;
+        bottom: 35px;
+        left: 16px;
+        z-index: 1002;
+        background: #102c27;
+        color: white;
+        border-radius: 14px;
+        padding: 14px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+        max-width: calc(100% - 32px);
+        box-shadow: 0 12px 35px #0004;
+    }
+
+    .nexus-compare-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: #03130fd9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+    }
+
+    .nexus-compare-modal[hidden],
+    .nexus-compare-bar[hidden],
+    #station-details[hidden],
+    #nearest-result[hidden] {
+        display: none !important;
+    }
+
+    .nexus-compare-dialog {
+        width: min(1150px, 100%);
+        max-height: 92vh;
+        overflow-y: auto;
+        background: white;
+        color: #17212b;
+        border-radius: 20px;
+        padding: 24px;
+        box-shadow: 0 20px 70px #0005;
+    }
+
+    .nexus-compare-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .nexus-compare-header h2 {
+        margin: 0;
+        font-size: 23px;
+    }
+
+    .nexus-calculator {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        padding: 18px;
+        border-radius: 14px;
+        margin-top: 20px;
+    }
+
+    .nexus-calculator h3 {
+        margin: 0 0 14px;
+        font-size: 17px;
+    }
+
+    .nexus-calc-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .nexus-calc-grid label {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+
+    .nexus-calc-grid input {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #cbd5e1;
+        border-radius: 9px;
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    .nexus-compare-grid {
+        display: grid;
+        grid-template-columns:
+            repeat(auto-fit, minmax(240px, 1fr));
+        gap: 16px;
+        margin-top: 22px;
+    }
+
+    .nexus-compare-card {
+        background: #f8fafc;
+        border: 1px solid #dbe4e8;
+        border-radius: 14px;
+        padding: 18px;
+        overflow-wrap: anywhere;
+    }
+
+    .nexus-compare-card h3 {
+        color: #12332b;
+        margin: 0 0 10px;
+        font-size: 18px;
+    }
+
+    .nexus-compare-card p {
+        font-size: 12px;
+        color: #64748b;
+    }
+
+    .nexus-compare-field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        padding: 10px 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .nexus-compare-field small {
+        color: #64748b;
+        font-size: 11px;
+    }
+
+    .nexus-compare-field strong {
+        color: #17212b;
+        font-size: 13px;
+    }
+
+    .nexus-compare-card a {
+        display: block;
+        margin-top: 12px;
+        color: #15803d;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .nexus-compare-card button {
+        margin-top: 14px;
+    }
+
+    .nexus-note {
+        font-size: 12px;
+        color: #64748b;
+        line-height: 1.7;
+        margin-top: 12px;
+    }
+
+    .nexus-detail-panel {
+        position: absolute;
+        top: 78px;
+        right: 14px;
+        z-index: 1100;
+        width: 350px;
+        max-width: calc(100% - 28px);
+        max-height: calc(100% - 96px);
+        overflow-y: auto;
+        background: white;
+        color: #17212b;
+        border-radius: 16px;
+        padding: 22px;
+        box-shadow: 0 14px 40px #0004;
+    }
+
+    .nexus-detail-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .nexus-detail-header h2 {
+        margin: 0;
+        font-size: 21px;
+    }
+
+    .nexus-detail-row {
+        padding: 11px 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .nexus-detail-row small {
+        display: block;
+        color: #64748b;
+        font-size: 11px;
+        margin-bottom: 5px;
+    }
+
+    .nexus-detail-row strong {
+        font-size: 13px;
+        overflow-wrap: anywhere;
+    }
+
+    .nexus-detail-panel a {
+        color: #15803d;
+        font-weight: 700;
+        font-size: 13px;
+    }
+
+    @media (max-width: 700px) {
+        .nexus-calc-grid {
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+        }
+
+        .nexus-compare-dialog {
+            padding: 16px;
+        }
+
+        .nexus-compare-header h2 {
+            font-size: 18px;
+        }
+
+        .nexus-compare-bar {
+            bottom: 8px;
+            left: 8px;
+        }
+    }
+</style>
+
+<main class="map-page">
+
+    <div class="map-heading">
+        <div>
+            <div class="eyebrow">
+                PAKISTAN EV NETWORK
+            </div>
+
+            <h1>
+                Find your next <em>charge.</em>
+            </h1>
+
+            <p>
+                Discover charging stations, compare charging
+                power and published tariffs, and estimate
+                charging costs for your vehicle.
+            </p>
+        </div>
+
+        <span class="demo-pill">
+            ● COMMUNITY MAP DATA
+        </span>
+    </div>
+
+    <div class="map-notice">
+        <strong>Important:</strong>
+        Station information comes from OpenStreetMap,
+        OpenChargeMap and selected published directories.
+        Prices are not guaranteed live tariffs.
+        Availability and compatibility are not verified.
+        Confirm details with the operator before travelling.
+        Public stations cannot be reserved through EVCharge
+        Nexus unless they participate in its booking system.
+    </div>
+
+    <!--
+        MODULE 4: SMART RECOMMENDATIONS
+
+        recommendations.js automatically inserts the
+        recommendation interface directly above .map-shell.
+
+        Keep this map-shell class unchanged.
+    -->
+
+    <div class="map-shell">
+
+        <aside class="map-sidebar">
+
+            <div class="map-filters">
+
+                <label for="search">
+                    Search charging locations
+                </label>
+
+                <input
+                    id="search"
+                    type="search"
+                    placeholder="Station, address or operator"
+                    autocomplete="off"
+                >
+
+                <div class="filter-pair">
+
+                    <div>
+                        <label for="city">City</label>
+
+                        <select id="city">
+                            <option value="Karachi">Karachi</option>
+                            <option value="Lahore">Lahore</option>
+                            <option value="Islamabad">Islamabad</option>
+                            <option value="Rawalpindi">Rawalpindi</option>
+                            <option value="Peshawar">Peshawar</option>
+                            <option value="Faisalabad">Faisalabad</option>
+                            <option value="Multan">Multan</option>
+                            <option value="Quetta">Quetta</option>
+                            <option value="Hyderabad">Hyderabad</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="connector">
+                            Connector
+                        </label>
+
+                        <select id="connector">
+                            <option value="">All types</option>
+                            <option value="type2">Type 2</option>
+                            <option value="ccs">CCS</option>
+                            <option value="chademo">CHAdeMO</option>
+                            <option value="gb">GB/T</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <label for="vehicle">
+                    Saved vehicle
+                </label>
+
+                <select id="vehicle">
+                    <option value="">Any vehicle</option>
+                </select>
+
+                <p class="map-hint">
+                    Vehicle filtering uses recorded connector
+                    types. Unknown connector records may be hidden.
+                </p>
+
+            </div>
+
+            <div class="results-head">
+                <strong id="count">
+                    Loading charging stations...
+                </strong>
+
+                <span>
+                    OSM + OpenChargeMap
+                </span>
+            </div>
+
+            <div
+                id="station-list"
+                class="station-results"
+                aria-live="polite"
+            ></div>
+
+        </aside>
+
+        <section class="map-canvas">
+
+            <div
+                id="charging-map"
+                role="region"
+                aria-label="EV charging station map"
+                style="
+                    width:100%;
+                    height:650px;
+                    min-height:650px;
+                "
+            ></div>
+
+            <div class="map-overlay">
+
+                <button id="locate" type="button">
+                    ⌖ My location
+                </button>
+
+                <button id="nearest" type="button">
+                    ⚡ Find nearest station
+                </button>
+
+                <button id="reset" type="button">
+                    ↺ Reset view
+                </button>
+
+            </div>
+
+            <div
+                id="nearest-result"
+                hidden
+                aria-live="polite"
+            ></div>
+
+            <div
+                id="compare-bar"
+                class="nexus-compare-bar"
+                hidden
+            >
+                <strong id="compare-count">
+                    0 / 3 stations selected
+                </strong>
+
+                <button
+                    id="open-comparison"
+                    type="button"
+                    class="nexus-main-btn"
+                >
+                    Compare Stations
+                </button>
+
+                <button
+                    id="clear-comparison"
+                    type="button"
+                    class="nexus-secondary-btn"
+                >
+                    Clear
+                </button>
+            </div>
+
+            <div
+                id="station-details"
+                class="nexus-detail-panel"
+                hidden
+            >
+
+                <div class="nexus-detail-header">
+                    <h2 id="details-title">
+                        Charging Station
+                    </h2>
+
+                    <button
+                        id="close-details"
+                        type="button"
+                        class="nexus-secondary-btn"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                <p
+                    id="details-address"
+                    class="nexus-note"
+                ></p>
+
+                <div class="nexus-detail-row">
+                    <small>Charging power</small>
+                    <strong id="details-power"></strong>
+                </div>
+
+                <div class="nexus-detail-row">
+                    <small>Price per kWh</small>
+                    <strong id="details-price"></strong>
+                </div>
+
+                <div class="nexus-detail-row">
+                    <small>Price source</small>
+                    <strong id="details-price-source"></strong>
+
+                    <a
+                        id="details-price-link"
+                        href="#"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        hidden
+                        style="display:block;margin-top:7px;"
+                    >
+                        View published source ↗
+                    </a>
+                </div>
+
+                <div class="nexus-detail-row">
+                    <small>Connectors</small>
+                    <strong id="details-connectors"></strong>
+                </div>
+
+                <div class="nexus-detail-row">
+                    <small>Charging points</small>
+                    <strong id="details-capacity"></strong>
+                </div>
+
+                <div class="nexus-detail-row">
+                    <small>Operator</small>
+                    <strong id="details-operator"></strong>
+                </div>
+
+                <div class="nexus-detail-row">
+                    <small>Opening hours</small>
+                    <strong id="details-hours"></strong>
+                </div>
+
+                <div class="nexus-detail-row">
+                    <small>Availability</small>
+                    <strong id="details-availability"></strong>
+                </div>
+
+                <div class="nexus-detail-row">
+                    <small>Station data source</small>
+                    <strong id="details-source"></strong>
+                </div>
+
+                <div class="nexus-detail-row">
+                    <small>Phone</small>
+                    <div id="details-phone"></div>
+                </div>
+
+                <div class="nexus-detail-row">
+                    <small>Website</small>
+                    <div id="details-website"></div>
+                </div>
+
+                <a
+                    id="details-directions"
+                    href="#"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="nexus-main-btn"
+                    style="
+                        display:block;
+                        text-align:center;
+                        margin-top:18px;
+                        text-decoration:none;
+                    "
+                >
+                    ↗ Get Google Maps Directions
+                </a>
+
+                <p class="nexus-note">
+                    Published tariffs and charging specifications
+                    can change. Verify with the operator.
+                </p>
+
+            </div>
+
+            <div class="map-attribution-note">
+                OpenStreetMap contributors ·
+                Community-maintained station records
+            </div>
+
+        </section>
+
+    </div>
+
+</main>
+
+<!-- MODULE 3: STATION COMPARISON MODAL -->
+
+<div
+    id="compare-modal"
+    class="nexus-compare-modal"
+    hidden
+>
+
+    <div
+        class="nexus-compare-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Smart charging station comparison"
+    >
+
+        <div class="nexus-compare-header">
+
+            <h2>
+                ⚡ Smart Station Comparison
+            </h2>
+
+            <button
+                id="close-comparison"
+                type="button"
+                class="nexus-secondary-btn"
+            >
+                ✕ Close
+            </button>
+
+        </div>
+
+        <p class="nexus-note">
+            Compare published charging power, prices,
+            estimated charging cost and charging time.
+            Estimates are not guaranteed.
+        </p>
+
+        <div class="nexus-calculator">
+
+            <h3>
+                🔋 Charging Cost & Time Calculator
+            </h3>
+
+            <div class="nexus-calc-grid">
+
+                <div>
+                    <label for="calc-battery">
+                        Battery capacity (kWh)
+                    </label>
+
+                    <input
+                        id="calc-battery"
+                        type="number"
+                        min="1"
+                        max="250"
+                        value="60"
+                        step="1"
+                    >
+                </div>
+
+                <div>
+                    <label for="calc-start">
+                        Current battery (%)
+                    </label>
+
+                    <input
+                        id="calc-start"
+                        type="number"
+                        min="0"
+                        max="99"
+                        value="20"
+                        step="1"
+                    >
+                </div>
+
+                <div>
+                    <label for="calc-target">
+                        Target battery (%)
+                    </label>
+
+                    <input
+                        id="calc-target"
+                        type="number"
+                        min="1"
+                        max="100"
+                        value="80"
+                        step="1"
+                    >
+                </div>
+
+                <div>
+                    <label for="calc-efficiency">
+                        Charging efficiency (%)
+                    </label>
+
+                    <input
+                        id="calc-efficiency"
+                        type="number"
+                        min="50"
+                        max="100"
+                        value="90"
+                        step="1"
+                    >
+                </div>
+
+            </div>
+
+            <p class="nexus-note">
+                Cost assumes a flat per-kWh tariff and
+                estimated charging losses. Time assumes
+                constant charging power, without accounting
+                for the vehicle's maximum charging rate,
+                battery taper or charger sharing.
+                Actual charging time may be longer.
+            </p>
+
+        </div>
+
+        <div
+            id="compare-grid"
+            class="nexus-compare-grid"
+        ></div>
+
+    </div>
+
+</div>
+
+<!-- LEAFLET MAP LIBRARY -->
+
+<script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+></script>
+
+<!-- MODULES 2 & 3: MAP AND STATION COMPARISON -->
+
+<script
+    src="{{ url_for('static', filename='stations.js') }}"
+    defer
+></script>
+
+<!-- MODULE 4: SMART RECOMMENDATIONS -->
+
+<script
+    src="{{ url_for('static', filename='recommendations.js') }}"
+    defer
+></script>
+
+{% endblock %}

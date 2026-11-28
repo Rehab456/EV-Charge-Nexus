@@ -1,0 +1,410 @@
+
+/* EVCharge Nexus — Premium Reservations */
+
+.res-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at 85% 0%, rgba(25, 190, 138, .12), transparent 42%),
+    linear-gradient(160deg, #08131f, #0b1928 55%, #07121d);
+  color: #eef7fb;
+  padding: 55px 24px 95px;
+}
+
+.res-page * {
+  box-sizing: border-box;
+}
+
+.res-container {
+  max-width: 1230px;
+  margin: 0 auto;
+}
+
+.res-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 35px;
+}
+
+.res-eyebrow {
+  color: #50dbab;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2.3px;
+  margin-bottom: 15px;
+}
+
+.res-heading h1 {
+  font-size: clamp(30px, 4vw, 49px);
+  line-height: 1.12;
+  letter-spacing: -1.6px;
+  margin: 0 0 14px;
+  color: #f4fbff;
+}
+
+.res-heading h1 span {
+  color: #4cdda8;
+}
+
+.res-heading p {
+  color: #99adbc;
+  max-width: 610px;
+  line-height: 1.75;
+  font-size: 14px;
+}
+
+.res-mode {
+  white-space: nowrap;
+  padding: 12px 16px;
+  border: 1px solid #28493f;
+  background: #102b2a;
+  border-radius: 30px;
+  color: #a7e8d0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.res-mode-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: #43dca5;
+}
+
+.res-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, .85fr);
+  gap: 25px;
+  align-items: start;
+}
+
+.res-panel,
+.res-summary,
+.res-feature {
+  border: 1px solid #22384b;
+  background: #102234;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .13);
+}
+
+.res-panel {
+  padding: 31px;
+}
+
+.res-panel-heading {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.res-step {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: #153f38;
+  color: #52e2af;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.res-panel-heading h2 {
+  color: #f5faff;
+  margin: 0 0 5px;
+  font-size: 21px;
+}
+
+.res-panel-heading p {
+  margin: 0;
+  color: #8ea4b5;
+  font-size: 13px;
+}
+
+.res-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 21px;
+}
+
+.res-field {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+}
+
+.res-field label {
+  color: #c7d5df;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.res-field input,
+.res-field select {
+  width: 100%;
+  min-height: 49px;
+  border: 1px solid #31465a;
+  border-radius: 11px;
+  background: #172c3f;
+  color: #f2f8fc;
+  padding: 0 14px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  color-scheme: dark;
+}
+
+.res-field input:focus,
+.res-field select:focus {
+  border-color: #48d7a4;
+  box-shadow: 0 0 0 3px rgba(72, 215, 164, .12);
+}
+
+.res-field small {
+  font-size: 11px;
+  line-height: 1.5;
+  color: #90a8b9;
+}
+
+.res-double {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.res-alert {
+  padding: 13px 15px;
+  background: #173047;
+  border: 1px solid #2b4a62;
+  color: #b8d6e9;
+  font-size: 12px;
+  line-height: 1.6;
+  border-radius: 11px;
+  margin-top: 25px;
+}
+
+.res-alert.error {
+  background: #3b2229;
+  border-color: #78404a;
+  color: #ffc5cb;
+}
+
+.res-alert.success {
+  background: #153a32;
+  border-color: #296f56;
+  color: #a4f1cd;
+}
+
+.res-primary,
+.res-confirm {
+  width: 100%;
+  border: 0;
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-weight: 800;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform .2s, background .2s;
+}
+
+.res-primary {
+  margin-top: 17px;
+  background: #42dca5;
+  color: #09251e;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.res-primary:hover {
+  background: #6deac0;
+  transform: translateY(-2px);
+}
+
+.res-side {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.res-summary {
+  padding: 27px;
+}
+
+.res-summary-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  color: #a7bac7;
+  font-weight: 800;
+}
+
+.res-preview-tag {
+  background: #203c38;
+  color: #75e4b7;
+  border-radius: 6px;
+  padding: 6px 9px;
+  font-size: 10px;
+}
+
+.res-energy {
+  padding: 30px 0 23px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.res-energy span,
+.res-metrics span {
+  color: #93a8b8;
+  font-size: 12px;
+}
+
+.res-energy strong {
+  font-size: 37px;
+  letter-spacing: -1px;
+  color: #f6fbff;
+}
+
+.res-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.res-metrics > div {
+  background: #192e40;
+  padding: 17px;
+  border: 1px solid #2b4254;
+  border-radius: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.res-metrics strong {
+  color: #5ee0b0;
+  font-size: 19px;
+}
+
+.res-divider {
+  height: 1px;
+  background: #2a4052;
+  margin: 24px 0;
+}
+
+.res-summary-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
+  margin-bottom: 17px;
+  font-size: 12px;
+}
+
+.res-summary-line span {
+  color: #91a7b8;
+  flex-shrink: 0;
+}
+
+.res-summary-line strong {
+  color: #e2edf5;
+  text-align: right;
+  overflow-wrap: anywhere;
+  max-width: 65%;
+  font-weight: 600;
+}
+
+.res-confirm {
+  background: #43dba5;
+  color: #09251e;
+}
+
+.res-confirm:disabled {
+  background: #2a4850;
+  color: #90a9b3;
+  cursor: not-allowed;
+}
+
+.res-disclaimer {
+  font-size: 11px;
+  color: #8da4b5;
+  line-height: 1.7;
+  margin: 15px 0 0;
+}
+
+.res-feature {
+  padding: 25px;
+  background: linear-gradient(140deg, #143b35, #11283a);
+}
+
+.res-feature-icon {
+  font-size: 25px;
+  color: #56e6b1;
+  margin-bottom: 12px;
+}
+
+.res-feature h3 {
+  color: #effbf6;
+  margin: 0 0 10px;
+  font-size: 18px;
+}
+
+.res-feature p {
+  color: #a6c1c5;
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.res-feature-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 20px;
+}
+
+.res-feature-footer span {
+  color: #9ce8c7;
+  background: rgba(74, 221, 167, .08);
+  padding: 8px 10px;
+  border-radius: 7px;
+  font-size: 10px;
+}
+
+@media (max-width: 900px) {
+  .res-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .res-page {
+    padding: 30px 15px 65px;
+  }
+
+  .res-heading {
+    flex-direction: column;
+  }
+
+  .res-panel,
+  .res-summary {
+    padding: 21px;
+  }
+
+  .res-double {
+    grid-template-columns: 1fr;
+  }
+
+  .res-energy strong {
+    font-size: 30px;
+  }
+}

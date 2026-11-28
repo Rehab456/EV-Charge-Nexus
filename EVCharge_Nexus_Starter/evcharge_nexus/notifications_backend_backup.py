@@ -1,0 +1,530 @@
+
+import sqlite3
+from datetime import datetime, timedelta, timezone
+
+from flask import (
+    Blueprint,
+    current_app,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for
+)
+
+from web_push import send_push_to_user
+from email_service import send_email_to_user
+
+
+notifications_bp = Blueprint(
+    "notifications",
+    __name__
+)
+
+PKT = timezone(timedelta(hours=5))
+
+
+# ==========================================
+# INITIALIZE NOTIFICATIONS DATABASE
+# ==========================================
+
+def init_notifications_db(db):
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS notifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            reservation_reference TEXT,
+            kind TEXT NOT NULL,
+            title TEXT NOT NULL,
+            message TEXT NOT NULL,
+            is_read INTEGER NOT NULL DEFAULT 0
+                CHECK(is_read IN (0, 1)),
+            created_at TEXT NOT NULL,
+            UNIQUE(
+                user_id,
+                reservation_reference,
+                kind
+            )
+        )
+    """)
+
+    db.execute("""
+        CREATE INDEX IF NOT EXISTS idx_notifications_user
+        ON notifications (
+            user_id,
+            is_read,
+            created_at DESC
+        )
+    """)
+
+    db.commit()
+
+
+# ==========================================
+# HELPERS
+# ==========================================
+
+def db_connection():
+    db = sqlite3.connect(
+        current_app.config["RESERVATIONS_DATABASE"],
+        timeout=15
+    )
+
+    db.row_factory = sqlite3.Row
+    db.execute("PRAGMA busy_timeout=15000")
+
+    return db
+
+
+def error(message, status=400):
+    return jsonify({
+        "error": message
+    }), status
+
+
+def current_user():
+    return session.get("user_id")
+
+
+# ==========================================
+# SAFE WEB PUSH HELPER
+# ==========================================
+
+def safe_send_push(user_id, title, message):
+    """
+    Send Web Push without affecting database
+    notifications or reservations.
+    """
+    try:
+        send_push_to_user(
+            user_id=user_id,
+            title=title,
+            message=message,
+            url="/my-reservations"
+        )
+    except Exception:
+        current_app.logger.exception(
+            "Unable to send reminder Web Push"
+        )
+
+
+# ==========================================
+# SAFE EMAIL HELPER
+# ==========================================
+
+def safe_send_reminder_email(user_id, title, message):
+    """
+    Send reminder email to the registered user.
+
+    Email delivery errors must not interrupt
+    reservation processing.
+    """
+    try:
+        email_message = (
+            "EVCharge Nexus - Charging Reminder\n\n"
+            f"{message}\n\n"
+            "Please check your reservation details "
+            "before your charging session.\n\n"
+            "This reservation is part of an "
+            "academic prototype.\n\n"
+            "Thank you for using EVCharge Nexus."
+        )
+
+        delivered = send_email_to_user(
+            user_id=user_id,
+            subject=title,
+            message=email_message
+        )
+
+        if not delivered:
+            current_app.logger.warning(
+                "Reminder email delivery failed for user %s",
+                user_id
+            )
+
+    except Exception:
+        current_app.logger.exception(
+            "Unable to send charging reminder email"
+        )
+
+
+# ==========================================
+# CREATE NOTIFICATION
+# ==========================================
+
+def add_booking_notification(
+    db,
+    user_id,
+    reference,
+    kind,
+    title,
+    message
+):
+    """
+    Called by reservations_backend.py.
+
+    Uses the same database transaction as the
+    reservation. The caller commits.
+    """
+
+    cursor = db.execute("""
+        INSERT OR IGNORE INTO notifications (
+            user_id,
+            reservation_reference,
+            kind,
+            title,
+            message,
+            created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (
+        user_id,
+        reference,
+        kind,
+        title,
+        message,
+        datetime.now(
+            timezone.utc
+        ).isoformat()
+    ))
+
+    return cursor.rowcount > 0
+
+
+# ==========================================
+# UPCOMING BOOKING REMINDERS
+# ==========================================
+
+def generate_reminders(db, user_id):
+    """
+    Create one reminder per confirmed booking.
+
+    Returns newly created reminders.
+
+    Email and Web Push are sent only after
+    the database transaction commits.
+    """
+    now = datetime.now(PKT)
+    reminder_limit = now + timedelta(hours=1)
+
+    rows = db.execute("""
+        SELECT
+            reference,
+            station_name,
+            start_at
+        FROM reservations
+        WHERE user_id = ?
+          AND status = 'confirmed'
+          AND start_at > ?
+          AND start_at <= ?
+    """, (
+        user_id,
+        now.isoformat(),
+        reminder_limit.isoformat()
+    )).fetchall()
+
+    new_reminders = []
+
+    for booking in rows:
+        try:
+            start = datetime.fromisoformat(
+                booking["start_at"]
+            ).astimezone(PKT)
+
+        except (TypeError, ValueError):
+            continue
+
+        message = (
+            f"Your prototype reservation at "
+            f"{booking['station_name']} starts at "
+            f"{start.strftime('%I:%M %p')} "
+            f"on {start.strftime('%d %b %Y')} "
+            f"(Pakistan time)."
+        )
+
+        created = add_booking_notification(
+            db,
+            user_id,
+            booking["reference"],
+            "reminder",
+            "Upcoming Charging Reservation",
+            message
+        )
+
+        if created:
+            new_reminders.append({
+                "user_id": user_id,
+                "reference": booking["reference"],
+                "title": "Charging Reminder - EVCharge Nexus",
+                "message": message
+            })
+
+    return new_reminders
+
+
+# ==========================================
+# DELIVER REMINDERS
+# ==========================================
+
+def deliver_reminders(reminders):
+    """
+    Send Web Push and email for each newly
+    created reminder after database commit.
+    """
+    for reminder in reminders:
+        safe_send_push(
+            reminder["user_id"],
+            reminder["title"],
+            reminder["message"]
+        )
+
+        safe_send_reminder_email(
+            reminder["user_id"],
+            reminder["title"],
+            reminder["message"]
+        )
+
+
+# ==========================================
+# PROCESS REMINDERS FOR ALL USERS
+# ==========================================
+
+def process_all_reminders():
+    """
+    Called periodically by a scheduler.
+
+    Finds confirmed reservations starting
+    within the next hour.
+
+    Creates in-app reminders and delivers
+    Web Push and email notifications.
+    """
+    db = db_connection()
+    reminders_to_send = []
+
+    try:
+        now = datetime.now(PKT)
+        limit = now + timedelta(hours=1)
+
+        users = db.execute("""
+            SELECT DISTINCT user_id
+            FROM reservations
+            WHERE status = 'confirmed'
+              AND start_at > ?
+              AND start_at <= ?
+        """, (
+            now.isoformat(),
+            limit.isoformat()
+        )).fetchall()
+
+        with db:
+            for row in users:
+                reminders_to_send.extend(
+                    generate_reminders(
+                        db,
+                        row["user_id"]
+                    )
+                )
+
+    except sqlite3.Error:
+        current_app.logger.exception(
+            "Scheduled reminder processing failed"
+        )
+        return 0
+
+    finally:
+        db.close()
+
+    # Send notifications after successful commit.
+    deliver_reminders(reminders_to_send)
+
+    return len(reminders_to_send)
+
+
+# ==========================================
+# GET NOTIFICATIONS
+# ==========================================
+
+@notifications_bp.get("/api/notifications")
+def list_notifications():
+    user_id = current_user()
+
+    if not user_id:
+        return error("Please sign in.", 401)
+
+    db = db_connection()
+    new_reminders = []
+
+    try:
+        with db:
+            new_reminders = generate_reminders(
+                db,
+                user_id
+            )
+
+        rows = db.execute("""
+            SELECT
+                id,
+                reservation_reference,
+                kind,
+                title,
+                message,
+                is_read,
+                created_at
+            FROM notifications
+            WHERE user_id = ?
+            ORDER BY created_at DESC, id DESC
+            LIMIT 100
+        """, (
+            user_id,
+        )).fetchall()
+
+        unread = db.execute("""
+            SELECT COUNT(*) AS total
+            FROM notifications
+            WHERE user_id = ?
+              AND is_read = 0
+        """, (
+            user_id,
+        )).fetchone()["total"]
+
+        result = {
+            "notifications": [
+                dict(row)
+                for row in rows
+            ],
+            "unread_count": unread
+        }
+
+    except sqlite3.Error:
+        current_app.logger.exception(
+            "Notification retrieval failed"
+        )
+
+        return error(
+            "Unable to load notifications.",
+            500
+        )
+
+    finally:
+        db.close()
+
+    # Send newly created reminders after commit.
+    deliver_reminders(new_reminders)
+
+    return jsonify(result)
+
+
+# ==========================================
+# MARK ONE NOTIFICATION AS READ
+# ==========================================
+
+@notifications_bp.post(
+    "/api/notifications/<int:notification_id>/read"
+)
+def mark_notification_read(notification_id):
+    user_id = current_user()
+
+    if not user_id:
+        return error("Please sign in.", 401)
+
+    if not request.is_json:
+        return error("Expected JSON request.", 415)
+
+    db = db_connection()
+
+    try:
+        with db:
+            result = db.execute("""
+                UPDATE notifications
+                SET is_read = 1
+                WHERE id = ?
+                  AND user_id = ?
+            """, (
+                notification_id,
+                user_id
+            ))
+
+        if not result.rowcount:
+            return error(
+                "Notification not found.",
+                404
+            )
+
+        return jsonify({
+            "message": "Notification marked as read."
+        })
+
+    except sqlite3.Error:
+        current_app.logger.exception(
+            "Unable to mark notification as read"
+        )
+
+        return error(
+            "Unable to update notification.",
+            500
+        )
+
+    finally:
+        db.close()
+
+
+# ==========================================
+# MARK ALL NOTIFICATIONS AS READ
+# ==========================================
+
+@notifications_bp.post(
+    "/api/notifications/read-all"
+)
+def mark_all_notifications_read():
+    user_id = current_user()
+
+    if not user_id:
+        return error("Please sign in.", 401)
+
+    if not request.is_json:
+        return error("Expected JSON request.", 415)
+
+    db = db_connection()
+
+    try:
+        with db:
+            db.execute("""
+                UPDATE notifications
+                SET is_read = 1
+                WHERE user_id = ?
+            """, (
+                user_id,
+            ))
+
+        return jsonify({
+            "message": "All notifications marked as read."
+        })
+
+    except sqlite3.Error:
+        current_app.logger.exception(
+            "Unable to update notifications"
+        )
+
+        return error(
+            "Unable to update notifications.",
+            500
+        )
+
+    finally:
+        db.close()
+
+
+# ==========================================
+# NOTIFICATIONS PAGE
+# ==========================================
+
+@notifications_bp.get("/notifications")
+def notifications_page():
+    if not current_user():
+        return redirect(url_for("login"))
+
+    return render_template(
+        "notifications.html"
+    )

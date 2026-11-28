@@ -1,0 +1,667 @@
+
+{% extends "base.html" %}
+
+{% block title %}Smart Reservations | EVCharge Nexus{% endblock %}
+
+{% block content %}
+
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='reservations.css') }}"
+>
+
+<style>
+  /* ==========================================
+     MODULE 7 — CHARGING SLOT AVAILABILITY
+     ========================================== */
+
+  .res-availability {
+    margin-top: 28px;
+    padding: 24px;
+    background: #0d1c2b;
+    border: 1px solid rgba(67, 220, 165, 0.18);
+    border-radius: 18px;
+  }
+
+  .res-availability[hidden] {
+    display: none !important;
+  }
+
+  .res-availability-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .res-availability-heading h3 {
+    margin: 0 0 6px;
+    color: #f1f7fa;
+    font-size: 19px;
+    font-weight: 750;
+  }
+
+  .res-availability-heading p {
+    margin: 0;
+    color: #94a8b8;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .res-availability-badge {
+    padding: 7px 11px;
+    border: 1px solid rgba(67, 220, 165, 0.3);
+    border-radius: 30px;
+    background: rgba(67, 220, 165, 0.08);
+    color: #43dca5;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.6px;
+    white-space: nowrap;
+  }
+
+  .res-slot-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .res-slot-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #a8bac7;
+    font-size: 12px;
+  }
+
+  .res-slot-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .res-slot-dot.available {
+    background: #43dca5;
+  }
+
+  .res-slot-dot.booked {
+    background: #f07878;
+  }
+
+  .res-slot-dot.unavailable {
+    background: #657483;
+  }
+
+  .res-slot-dot.selected {
+    background: #d4fff0;
+    box-shadow: 0 0 0 3px rgba(67, 220, 165, 0.22);
+  }
+
+  .res-slot-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .res-slot {
+    min-width: 0;
+    padding: 13px 8px;
+    border: 1px solid rgba(67, 220, 165, 0.2);
+    border-radius: 11px;
+    background: #112b2c;
+    color: #baf7df;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+    transition:
+      background 0.2s ease,
+      border-color 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .res-slot:not(:disabled):hover {
+    transform: translateY(-2px);
+    background: #17463c;
+    border-color: #43dca5;
+  }
+
+  .res-slot.is-selected {
+    background: #43dca5;
+    color: #08131f;
+    border-color: #43dca5;
+    box-shadow: 0 0 0 2px rgba(67, 220, 165, 0.14);
+  }
+
+  .res-slot.is-booked {
+    background: rgba(240, 120, 120, 0.07);
+    border-color: rgba(240, 120, 120, 0.2);
+    color: #f07878;
+    cursor: not-allowed;
+  }
+
+  .res-slot.is-unavailable {
+    background: rgba(101, 116, 131, 0.07);
+    border-color: rgba(101, 116, 131, 0.18);
+    color: #657483;
+    cursor: not-allowed;
+  }
+
+  .res-slot:disabled {
+    opacity: 0.75;
+  }
+
+  .res-slot:focus-visible {
+    outline: 2px solid #43dca5;
+    outline-offset: 3px;
+  }
+
+  .res-slot-message {
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px dashed rgba(148, 168, 184, 0.22);
+    border-radius: 11px;
+    color: #9bafbf;
+    font-size: 13px;
+    line-height: 1.6;
+    text-align: center;
+  }
+
+  .res-slot-message[hidden] {
+    display: none !important;
+  }
+
+  .res-slot-selection {
+    margin-top: 18px;
+    padding: 13px 15px;
+    border-radius: 10px;
+    background: rgba(67, 220, 165, 0.07);
+    border: 1px solid rgba(67, 220, 165, 0.16);
+    color: #b8e9d7;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .res-slot-selection strong {
+    color: #43dca5;
+  }
+
+  .res-slot-selection[hidden] {
+    display: none !important;
+  }
+
+  .res-slot-note {
+    margin: 16px 0 0;
+    color: #7e94a5;
+    font-size: 11px;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 700px) {
+    .res-availability {
+      padding: 18px;
+    }
+
+    .res-availability-heading {
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .res-slot-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .res-slot {
+      padding: 12px 6px;
+      font-size: 12px;
+    }
+  }
+
+  @media (max-width: 380px) {
+    .res-slot-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>
+
+<main class="res-page">
+  <div class="res-container">
+
+    <!-- ======================================
+         PAGE HEADING
+         ====================================== -->
+
+    <div class="res-heading">
+      <div>
+        <div class="res-eyebrow">
+          EVCHARGE NEXUS / SMART BOOKING
+        </div>
+
+        <h1>
+          Reserve Your
+          <span>Charging Slot.</span>
+        </h1>
+
+        <p>
+          Plan smarter with vehicle-aware charging estimates,
+          connector matching and a clear booking preview.
+        </p>
+      </div>
+
+      <div class="res-mode">
+        <span class="res-mode-dot"></span>
+        Prototype Reservations
+      </div>
+    </div>
+
+    <!-- ======================================
+         MAIN RESERVATION LAYOUT
+         ====================================== -->
+
+    <div class="res-layout">
+
+      <!-- LEFT PANEL -->
+
+      <section class="res-panel">
+
+        <div class="res-panel-heading">
+          <span class="res-step">01</span>
+
+          <div>
+            <h2>Plan Your Charge</h2>
+            <p>Enter your charging requirements.</p>
+          </div>
+        </div>
+
+        <div class="res-fields">
+
+          <!-- CITY -->
+
+          <div class="res-field">
+            <label for="res-city">City</label>
+
+            <select id="res-city">
+              <option>Karachi</option>
+              <option>Lahore</option>
+              <option>Islamabad</option>
+              <option>Rawalpindi</option>
+              <option>Faisalabad</option>
+              <option>Multan</option>
+              <option>Peshawar</option>
+              <option>Quetta</option>
+              <option>Hyderabad</option>
+            </select>
+          </div>
+
+          <!-- CHARGING STATION -->
+
+          <div class="res-field">
+            <label for="res-station">
+              Charging Station
+            </label>
+
+            <select id="res-station">
+              <option value="">
+                Loading stations...
+              </option>
+            </select>
+
+            <small id="res-station-info">
+              Select a city to view stations.
+            </small>
+          </div>
+
+          <!-- SAVED VEHICLE -->
+
+          <div class="res-field">
+            <label for="res-vehicle">
+              Your Electric Vehicle
+            </label>
+
+            <select id="res-vehicle">
+              <option value="">
+                Loading saved vehicles...
+              </option>
+            </select>
+
+            <small id="res-vehicle-info">
+              Vehicle specifications will appear here.
+            </small>
+          </div>
+
+          <!-- BATTERY LEVELS -->
+
+          <div class="res-double">
+
+            <div class="res-field">
+              <label for="res-current">
+                Current Battery (%)
+              </label>
+
+              <input
+                id="res-current"
+                type="number"
+                min="0"
+                max="99"
+                value="30"
+              >
+            </div>
+
+            <div class="res-field">
+              <label for="res-target">
+                Target Battery (%)
+              </label>
+
+              <input
+                id="res-target"
+                type="number"
+                min="1"
+                max="100"
+                value="80"
+              >
+            </div>
+
+          </div>
+
+          <!-- DATE AND TIME -->
+
+          <div class="res-double">
+
+            <div class="res-field">
+              <label for="res-date">
+                Reservation Date
+              </label>
+
+              <input
+                id="res-date"
+                type="date"
+              >
+            </div>
+
+            <div class="res-field">
+              <label for="res-time">
+                Preferred Start Time
+              </label>
+
+              <input
+                id="res-time"
+                type="time"
+                value="12:00"
+                step="900"
+              >
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- ==================================
+             MODULE 7 — SLOT AVAILABILITY
+             ================================== -->
+
+        <section
+          id="res-availability"
+          class="res-availability"
+          aria-labelledby="res-availability-title"
+          hidden
+        >
+
+          <div class="res-availability-heading">
+            <div>
+              <h3 id="res-availability-title">
+                Available Charging Slots
+              </h3>
+
+              <p>
+                Select a starting time for your
+                estimated charging session.
+              </p>
+            </div>
+
+            <span class="res-availability-badge">
+              SIMULATED
+            </span>
+          </div>
+
+          <!-- SLOT STATUS LEGEND -->
+
+          <div class="res-slot-legend">
+
+            <span class="res-slot-legend-item">
+              <span class="res-slot-dot available"></span>
+              Available
+            </span>
+
+            <span class="res-slot-legend-item">
+              <span class="res-slot-dot booked"></span>
+              Booked
+            </span>
+
+            <span class="res-slot-legend-item">
+              <span class="res-slot-dot unavailable"></span>
+              Unavailable
+            </span>
+
+            <span class="res-slot-legend-item">
+              <span class="res-slot-dot selected"></span>
+              Selected
+            </span>
+
+          </div>
+
+          <!-- LOADING / EMPTY / ERROR MESSAGE -->
+
+          <div
+            id="res-slot-message"
+            class="res-slot-message"
+            role="status"
+            aria-live="polite"
+          >
+            Calculate your charging plan to check slots.
+          </div>
+
+          <!-- DYNAMIC SLOT BUTTONS -->
+
+          <div
+            id="res-slot-grid"
+            class="res-slot-grid"
+            role="group"
+            aria-label="Charging slot start times"
+          ></div>
+
+          <!-- SELECTED SLOT -->
+
+          <div
+            id="res-slot-selection"
+            class="res-slot-selection"
+            hidden
+          >
+            Selected start time:
+            <strong id="res-selected-slot">
+              —
+            </strong>
+          </div>
+
+          <p class="res-slot-note">
+            Availability reflects reservations stored
+            within EVCharge Nexus only. It does not
+            represent real-time charging station occupancy
+            or an operator-confirmed reservation.
+          </p>
+
+        </section>
+
+        <!-- STATUS ALERT -->
+
+        <div
+          id="res-alert"
+          class="res-alert"
+          role="status"
+          aria-live="polite"
+        >
+          Select a vehicle and station to calculate
+          your charging plan.
+        </div>
+
+        <!-- CALCULATE BUTTON -->
+
+        <button
+          id="res-preview"
+          class="res-primary"
+          type="button"
+        >
+          Calculate Charging Plan
+          <span>→</span>
+        </button>
+
+      </section>
+
+      <!-- ======================================
+           RIGHT SUMMARY PANEL
+           ====================================== -->
+
+      <aside class="res-side">
+
+        <section class="res-summary">
+
+          <div class="res-summary-top">
+            <span>YOUR CHARGING PLAN</span>
+
+            <span class="res-preview-tag">
+              ESTIMATE
+            </span>
+          </div>
+
+          <!-- ENERGY -->
+
+          <div class="res-energy">
+            <span>
+              Estimated energy required
+            </span>
+
+            <strong id="res-energy">—</strong>
+          </div>
+
+          <!-- DURATION AND COST -->
+
+          <div class="res-metrics">
+
+            <div>
+              <span>Charging Time</span>
+              <strong id="res-duration">—</strong>
+            </div>
+
+            <div>
+              <span>Estimated Cost</span>
+              <strong id="res-cost">—</strong>
+            </div>
+
+          </div>
+
+          <div class="res-divider"></div>
+
+          <!-- STATION -->
+
+          <div class="res-summary-line">
+            <span>Station</span>
+
+            <strong id="res-summary-station">
+              Not selected
+            </strong>
+          </div>
+
+          <!-- VEHICLE -->
+
+          <div class="res-summary-line">
+            <span>Vehicle</span>
+
+            <strong id="res-summary-vehicle">
+              Not selected
+            </strong>
+          </div>
+
+          <!-- CONNECTOR -->
+
+          <div class="res-summary-line">
+            <span>Connector</span>
+
+            <strong id="res-summary-connector">
+              —
+            </strong>
+          </div>
+
+          <!-- SCHEDULE -->
+
+          <div class="res-summary-line">
+            <span>Schedule</span>
+
+            <strong id="res-summary-date">
+              Not selected
+            </strong>
+          </div>
+
+          <div class="res-divider"></div>
+
+          <!-- CONFIRM BOOKING -->
+
+          <button
+            id="res-confirm"
+            class="res-confirm"
+            type="button"
+            disabled
+          >
+            Confirm Reservation
+          </button>
+
+          <p class="res-disclaimer">
+            Select an available prototype charging slot
+            before confirming your reservation.
+            Charging times and costs are estimates.
+            No real charging operator is notified.
+          </p>
+
+        </section>
+
+        <!-- SMART BOOKING INFORMATION -->
+
+        <section class="res-feature">
+
+          <div class="res-feature-icon">
+            ✦
+          </div>
+
+          <h3>Nexus Smart Booking</h3>
+
+          <p>
+            Your charging plan considers vehicle battery
+            capacity, connector compatibility and station
+            charging power.
+          </p>
+
+          <div class="res-feature-footer">
+            <span>● Vehicle-aware estimates</span>
+            <span>● Compatibility checks</span>
+            <span>● Transparent pricing</span>
+          </div>
+
+        </section>
+
+      </aside>
+
+    </div>
+
+  </div>
+</main>
+
+<script
+  src="{{ url_for('static', filename='reservations.js') }}"
+  defer
+></script>
+
+{% endblock %}

@@ -1,0 +1,946 @@
+
+{% extends "base.html" %}
+
+{% block title %}My Reservations | EVCharge Nexus{% endblock %}
+
+{% block content %}
+
+<style>
+.booking-page {
+    min-height: 100vh;
+    padding: 55px 24px 90px;
+    color: #eef7fb;
+    background: linear-gradient(145deg, #08131f, #102538);
+}
+
+.booking-container {
+    max-width: 1120px;
+    margin: auto;
+}
+
+.booking-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+}
+
+.booking-header h1 {
+    font-size: clamp(30px, 4vw, 44px);
+    margin: 0 0 10px;
+}
+
+.booking-header h1 span {
+    color: #43dca5;
+}
+
+.booking-header p {
+    color: #9bb2c1;
+    font-size: 14px;
+}
+
+.booking-new {
+    display: inline-block;
+    padding: 14px 20px;
+    background: #43dca5;
+    color: #08241c;
+    border-radius: 11px;
+    text-decoration: none;
+    font-weight: 800;
+    transition: background .2s;
+}
+
+.booking-new:hover {
+    background: #65ebbb;
+}
+
+.booking-note {
+    background: #173047;
+    border: 1px solid #315069;
+    border-radius: 12px;
+    padding: 14px 18px;
+    color: #b8d5e5;
+    font-size: 13px;
+    margin-bottom: 24px;
+}
+
+/* RESERVATION FILTER TABS */
+
+.booking-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 25px;
+    border-bottom: 1px solid #294357;
+    padding-bottom: 17px;
+}
+
+.booking-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 12px 18px;
+    background: #142a3d;
+    border: 1px solid #315069;
+    border-radius: 11px;
+    color: #b5cbd9;
+    font-size: 13px;
+    font-weight: 750;
+    cursor: pointer;
+    transition: all .2s ease;
+}
+
+.booking-tab:hover {
+    background: #1b394f;
+    color: #ffffff;
+}
+
+.booking-tab.active {
+    background: #43dca5;
+    border-color: #43dca5;
+    color: #08241c;
+}
+
+.booking-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 23px;
+    height: 23px;
+    padding: 0 5px;
+    box-sizing: border-box;
+    border-radius: 20px;
+    background: rgba(255,255,255,.12);
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.booking-tab.active .booking-count {
+    background: rgba(8,36,28,.15);
+}
+
+/* RESERVATION CARDS */
+
+.booking-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+    gap: 20px;
+}
+
+.booking-card {
+    padding: 24px;
+    background: #112538;
+    border: 1px solid #294357;
+    border-radius: 18px;
+}
+
+.booking-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+}
+
+.booking-ref {
+    color: #e7f8f0;
+    font-size: 13px;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+}
+
+.booking-status {
+    border-radius: 20px;
+    padding: 7px 10px;
+    font-size: 11px;
+    font-weight: 800;
+    background: #20453a;
+    color: #71e5b4;
+}
+
+.booking-status.cancelled {
+    background: #482b35;
+    color: #ffabb8;
+}
+
+.booking-status.completed {
+    background: #263d51;
+    color: #afc8dc;
+}
+
+.booking-card h3 {
+    color: #f4fbff;
+    font-size: 19px;
+    margin: 0 0 8px;
+}
+
+.booking-address {
+    color: #9db1c0;
+    font-size: 12px;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.booking-details {
+    border-top: 1px solid #2b4355;
+    padding-top: 18px;
+}
+
+.booking-detail {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+    font-size: 12px;
+}
+
+.booking-detail span {
+    color: #95aabb;
+}
+
+.booking-detail strong {
+    color: #eaf4fb;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+/* ACTION BUTTONS */
+
+.booking-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+    margin-top: 20px;
+}
+
+.booking-directions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 14px 16px;
+    background: #43dca5;
+    border: 1px solid #43dca5;
+    border-radius: 10px;
+    color: #08241c;
+    font-size: 14px;
+    font-weight: 800;
+    text-decoration: none;
+    transition:
+        background .2s ease,
+        transform .2s ease;
+}
+
+.booking-directions:hover {
+    background: #65ebbb;
+    transform: translateY(-2px);
+}
+
+.booking-cancel {
+    width: 100%;
+    padding: 13px;
+    background: transparent;
+    border: 1px solid #9c495a;
+    border-radius: 10px;
+    color: #ffb3c0;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .2s ease;
+}
+
+.booking-cancel:hover {
+    background: #3b2531;
+}
+
+.booking-cancel:disabled {
+    opacity: .55;
+    cursor: wait;
+}
+
+.booking-tab:focus-visible,
+.booking-directions:focus-visible,
+.booking-cancel:focus-visible {
+    outline: 3px solid #ffffff;
+    outline-offset: 3px;
+}
+
+/* EMPTY AND ERROR STATES */
+
+.booking-empty {
+    grid-column: 1 / -1;
+    padding: 55px 25px;
+    text-align: center;
+    background: #112538;
+    border: 1px solid #294357;
+    border-radius: 18px;
+    color: #adc2d0;
+}
+
+.booking-empty h3 {
+    color: #f0f8fc;
+}
+
+.booking-error {
+    color: #ffbdc6;
+}
+
+/* MOBILE RESPONSIVE */
+
+@media (max-width: 600px) {
+    .booking-page {
+        padding: 30px 15px 65px;
+    }
+
+    .booking-card {
+        padding: 18px;
+    }
+
+    .booking-header {
+        align-items: flex-start;
+    }
+
+    .booking-new {
+        width: 100%;
+        text-align: center;
+        box-sizing: border-box;
+    }
+
+    .booking-tabs {
+        gap: 8px;
+    }
+
+    .booking-tab {
+        flex: 1;
+        padding: 11px 10px;
+        font-size: 12px;
+    }
+
+    .booking-detail {
+        gap: 10px;
+    }
+}
+</style>
+
+<main class="booking-page">
+
+    <div class="booking-container">
+
+        <!-- PAGE HEADER -->
+
+        <div class="booking-header">
+            <div>
+                <h1>My <span>Reservations</span></h1>
+                <p>Manage your EVCharge Nexus charging plans.</p>
+            </div>
+
+            <a
+                class="booking-new"
+                href="{{ url_for('reservations') }}"
+            >
+                + New Reservation
+            </a>
+        </div>
+
+        <!-- PROTOTYPE NOTICE -->
+
+        <div class="booking-note">
+            Academic prototype bookings only.
+            These reservations do not reserve a charger
+            with any real charging operator.
+        </div>
+
+        <!-- RESERVATION FILTERS -->
+
+        <div
+            class="booking-tabs"
+            role="group"
+            aria-label="Filter reservations"
+        >
+
+            <button
+                type="button"
+                class="booking-tab active"
+                data-filter="upcoming"
+                aria-pressed="true"
+            >
+                Upcoming
+                <span
+                    class="booking-count"
+                    id="upcoming-count"
+                >0</span>
+            </button>
+
+            <button
+                type="button"
+                class="booking-tab"
+                data-filter="completed"
+                aria-pressed="false"
+            >
+                Completed
+                <span
+                    class="booking-count"
+                    id="completed-count"
+                >0</span>
+            </button>
+
+            <button
+                type="button"
+                class="booking-tab"
+                data-filter="cancelled"
+                aria-pressed="false"
+            >
+                Cancelled
+                <span
+                    class="booking-count"
+                    id="cancelled-count"
+                >0</span>
+            </button>
+
+        </div>
+
+        <!-- RESERVATION LIST -->
+
+        <div
+            id="booking-list"
+            class="booking-grid"
+            aria-live="polite"
+        >
+            <div class="booking-empty">
+                Loading your reservations...
+            </div>
+        </div>
+
+    </div>
+
+</main>
+
+<script>
+(() => {
+    "use strict";
+
+    const container = document.getElementById("booking-list");
+
+    const tabs = document.querySelectorAll(".booking-tab");
+
+    let allReservations = [];
+    let activeFilter = "upcoming";
+
+    // =====================================
+    // SAFE ELEMENT CREATION
+    // =====================================
+
+    function makeElement(tag, className, value) {
+        const element = document.createElement(tag);
+
+        if (className) {
+            element.className = className;
+        }
+
+        if (value !== undefined) {
+            element.textContent = value;
+        }
+
+        return element;
+    }
+
+    function detail(label, value) {
+        const row = makeElement("div", "booking-detail");
+
+        row.append(
+            makeElement("span", "", label),
+            makeElement(
+                "strong",
+                "",
+                value ?? "Unknown"
+            )
+        );
+
+        return row;
+    }
+
+    // =====================================
+    // DATE FORMATTING
+    // =====================================
+
+    function formatDate(value) {
+        const date = new Date(value);
+
+        return Number.isNaN(date.getTime())
+            ? "Unknown"
+            : date.toLocaleString("en-PK", {
+                dateStyle: "medium",
+                timeStyle: "short",
+                timeZone: "Asia/Karachi"
+            });
+    }
+
+    // =====================================
+    // RESERVATION STATUS
+    // =====================================
+
+    function getBookingStatus(booking) {
+
+        if (booking.status === "cancelled") {
+            return "cancelled";
+        }
+
+        if (booking.status === "completed") {
+            return "completed";
+        }
+
+        if (booking.status !== "confirmed") {
+            return "completed";
+        }
+
+        const end = new Date(booking.end_at);
+
+        if (!Number.isNaN(end.getTime()) && end <= new Date()) {
+            return "completed";
+        }
+
+        return "upcoming";
+    }
+
+    // =====================================
+    // GOOGLE MAPS DIRECTIONS
+    // =====================================
+
+    function createDirectionsLink(booking) {
+
+        const lat = booking.station_lat;
+        const lng = booking.station_lng;
+
+        const validCoordinates =
+            lat !== null &&
+            lat !== undefined &&
+            lat !== "" &&
+            lng !== null &&
+            lng !== undefined &&
+            lng !== "" &&
+            Number.isFinite(Number(lat)) &&
+            Number.isFinite(Number(lng)) &&
+            Number(lat) >= -90 &&
+            Number(lat) <= 90 &&
+            Number(lng) >= -180 &&
+            Number(lng) <= 180;
+
+        let destination = "";
+
+        if (validCoordinates) {
+
+            destination =
+                `${Number(lat)},${Number(lng)}`;
+
+        } else {
+
+            destination = [
+                booking.station_name,
+                booking.station_address,
+                booking.station_city,
+                "Pakistan"
+            ]
+                .filter(Boolean)
+                .join(", ");
+        }
+
+        if (!destination.trim()) {
+            return null;
+        }
+
+        const url =
+            "https://www.google.com/maps/dir/?api=1" +
+            "&destination=" +
+            encodeURIComponent(destination) +
+            "&travelmode=driving";
+
+        const link = makeElement(
+            "a",
+            "booking-directions",
+            "↗ Get Directions"
+        );
+
+        link.href = url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+
+        link.title =
+            "Open Google Maps directions to this charging station";
+
+        return link;
+    }
+
+    // =====================================
+    // EMPTY / ERROR MESSAGE
+    // =====================================
+
+    function showMessage(message, isError = false) {
+
+        container.replaceChildren(
+            makeElement(
+                "div",
+                "booking-empty" +
+                    (isError ? " booking-error" : ""),
+                message
+            )
+        );
+    }
+
+    // =====================================
+    // UPDATE FILTER COUNTS
+    // =====================================
+
+    function updateCounts() {
+
+        const counts = {
+            upcoming: 0,
+            completed: 0,
+            cancelled: 0
+        };
+
+        for (const booking of allReservations) {
+            const status = getBookingStatus(booking);
+
+            if (Object.prototype.hasOwnProperty.call(counts, status)) {
+                counts[status]++;
+            }
+        }
+
+        document.getElementById("upcoming-count").textContent =
+            counts.upcoming;
+
+        document.getElementById("completed-count").textContent =
+            counts.completed;
+
+        document.getElementById("cancelled-count").textContent =
+            counts.cancelled;
+    }
+
+    // =====================================
+    // FILTER BUTTONS
+    // =====================================
+
+    tabs.forEach(tab => {
+
+        tab.addEventListener("click", () => {
+
+            activeFilter = tab.dataset.filter;
+
+            tabs.forEach(item => {
+
+                const selected =
+                    item.dataset.filter === activeFilter;
+
+                item.classList.toggle(
+                    "active",
+                    selected
+                );
+
+                item.setAttribute(
+                    "aria-pressed",
+                    String(selected)
+                );
+            });
+
+            renderReservations();
+        });
+    });
+
+    // =====================================
+    // LOAD RESERVATIONS FROM SQLITE API
+    // =====================================
+
+    async function loadReservations() {
+
+        try {
+
+            const response = await fetch(
+                "/api/reservations",
+                {
+                    credentials: "same-origin",
+                    headers: {
+                        Accept: "application/json"
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(
+                    "Unable to load reservations."
+                );
+            }
+
+            const data = await response.json();
+
+            allReservations = Array.isArray(data.reservations)
+                ? data.reservations
+                : [];
+
+            updateCounts();
+            renderReservations();
+
+        } catch (error) {
+
+            showMessage(error.message, true);
+        }
+    }
+
+    // =====================================
+    // RENDER SELECTED RESERVATION CATEGORY
+    // =====================================
+
+    function renderReservations() {
+
+        const filtered = allReservations.filter(
+            booking =>
+                getBookingStatus(booking) === activeFilter
+        );
+
+        container.replaceChildren();
+
+        if (!filtered.length) {
+
+            const messages = {
+                upcoming:
+                    "No upcoming reservations. Create your next charging plan!",
+                completed:
+                    "No completed reservations yet.",
+                cancelled:
+                    "No cancelled reservations."
+            };
+
+            showMessage(messages[activeFilter]);
+            return;
+        }
+
+        for (const booking of filtered) {
+
+            const card = makeElement(
+                "article",
+                "booking-card"
+            );
+
+            const top = makeElement(
+                "div",
+                "booking-card-top"
+            );
+
+            const status = getBookingStatus(booking);
+
+            const statusText =
+                status === "upcoming"
+                    ? "Confirmed"
+                    : status === "completed"
+                        ? "Completed"
+                        : "Cancelled";
+
+            top.append(
+                makeElement(
+                    "div",
+                    "booking-ref",
+                    booking.reference
+                ),
+                makeElement(
+                    "span",
+                    "booking-status " +
+                        (status === "upcoming"
+                            ? ""
+                            : status),
+                    statusText
+                )
+            );
+
+            card.append(
+                top,
+                makeElement(
+                    "h3",
+                    "",
+                    booking.station_name || "Charging Station"
+                ),
+                makeElement(
+                    "p",
+                    "booking-address",
+                    booking.station_address ||
+                        booking.station_city ||
+                        "Address unavailable"
+                )
+            );
+
+            // =====================================
+            // BOOKING DETAILS
+            // =====================================
+
+            const details = makeElement(
+                "div",
+                "booking-details"
+            );
+
+            details.append(
+
+                detail(
+                    "Vehicle",
+                    [
+                        booking.manufacturer,
+                        booking.model
+                    ]
+                        .filter(Boolean)
+                        .join(" ") || "Saved EV"
+                ),
+
+                detail(
+                    "City",
+                    booking.station_city
+                ),
+
+                detail(
+                    "Connector",
+                    booking.connector
+                ),
+
+                detail(
+                    "Start",
+                    formatDate(booking.start_at)
+                ),
+
+                detail(
+                    "End",
+                    formatDate(booking.end_at)
+                ),
+
+                detail(
+                    "Battery",
+                    `${booking.current_soc}% → ${booking.target_soc}%`
+                ),
+
+                detail(
+                    "Energy",
+                    `${Number(
+                        booking.energy_kwh
+                    ).toFixed(1)} kWh`
+                ),
+
+                detail(
+                    "Estimated Cost",
+                    booking.estimated_cost == null
+                        ? "Unknown"
+                        : `Rs. ${Number(
+                            booking.estimated_cost
+                        ).toLocaleString("en-PK")}`
+                )
+            );
+
+            card.append(details);
+
+            // =====================================
+            // ACTION BUTTONS
+            // =====================================
+
+            const actions = makeElement(
+                "div",
+                "booking-actions"
+            );
+
+            // GOOGLE MAPS DIRECTIONS
+
+            const directionsLink =
+                createDirectionsLink(booking);
+
+            if (directionsLink) {
+                actions.append(directionsLink);
+            }
+
+            // CANCEL ONLY FUTURE CONFIRMED BOOKINGS
+
+            const start = new Date(booking.start_at);
+
+            if (
+                booking.status === "confirmed" &&
+                start > new Date()
+            ) {
+
+                const button = makeElement(
+                    "button",
+                    "booking-cancel",
+                    "Cancel Reservation"
+                );
+
+                button.type = "button";
+
+                button.addEventListener(
+                    "click",
+                    async () => {
+
+                        if (
+                            !window.confirm(
+                                "Cancel this prototype reservation?"
+                            )
+                        ) {
+                            return;
+                        }
+
+                        button.disabled = true;
+
+                        try {
+
+                            const response = await fetch(
+                                `/api/reservations/${
+                                    encodeURIComponent(
+                                        booking.reference
+                                    )
+                                }/cancel`,
+                                {
+                                    method: "POST",
+                                    credentials: "same-origin",
+                                    headers: {
+                                        Accept: "application/json"
+                                    }
+                                }
+                            );
+
+                            const result =
+                                await response.json();
+
+                            if (!response.ok) {
+                                throw new Error(
+                                    result.error ||
+                                    "Cancellation failed."
+                                );
+                            }
+
+                            await loadReservations();
+
+                        } catch (error) {
+
+                            window.alert(error.message);
+                            button.disabled = false;
+                        }
+                    }
+                );
+
+                actions.append(button);
+            }
+
+            if (actions.childElementCount > 0) {
+                card.append(actions);
+            }
+
+            container.append(card);
+        }
+    }
+
+    // =====================================
+    // INITIAL LOAD
+    // =====================================
+
+    loadReservations();
+
+})();
+</script>
+
+{% endblock %}

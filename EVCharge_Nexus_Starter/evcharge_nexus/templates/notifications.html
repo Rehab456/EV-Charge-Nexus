@@ -1,0 +1,901 @@
+
+{% extends "base.html" %}
+
+{% block title %}Notifications | EVCharge Nexus{% endblock %}
+
+{% block content %}
+
+<style>
+.nf-page {
+    min-height: 100vh;
+    background: #08131f;
+    color: #f0f9fc;
+    padding: 35px 30px;
+    font-family: Inter, "Segoe UI", sans-serif;
+}
+
+.nf-container {
+    max-width: 1000px;
+    margin: auto;
+}
+
+.nf-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.nf-subtitle {
+    color: #94adbd;
+    font-size: 13px;
+    margin-top: 8px;
+}
+
+.nf-header h1 {
+    font-size: 28px;
+    margin: 0;
+    font-weight: 750;
+}
+
+.nf-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.nf-button {
+    padding: 11px 18px;
+    border-radius: 9px;
+    border: 1px solid #43dca5;
+    background: #173e35;
+    color: #43dca5;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .2s;
+}
+
+.nf-button:hover {
+    background: #245748;
+}
+
+.nf-button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.nf-button.secondary {
+    border-color: #365264;
+    background: #102635;
+    color: #c2d6df;
+}
+
+.nf-button.secondary:hover {
+    background: #1b384a;
+}
+
+.nf-push-panel {
+    background: #0e2030;
+    border: 1px solid #243b4d;
+    border-radius: 15px;
+    padding: 22px;
+    margin-bottom: 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+}
+
+.nf-push-info {
+    flex: 1;
+    min-width: 220px;
+}
+
+.nf-push-heading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: 750;
+    margin-bottom: 9px;
+}
+
+.nf-push-icon {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    background: #173e35;
+    border-radius: 10px;
+    color: #43dca5;
+    font-size: 19px;
+}
+
+.nf-push-description {
+    color: #94adbd;
+    font-size: 12px;
+    line-height: 1.8;
+}
+
+.nf-push-status {
+    margin-top: 10px;
+    color: #94adbd;
+    font-size: 12px;
+}
+
+.nf-push-status.success {
+    color: #43dca5;
+}
+
+.nf-push-status.error {
+    color: #ff9d9d;
+}
+
+.nf-push-controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.nf-panel {
+    background: #0e2030;
+    border: 1px solid #243b4d;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.nf-panel-header {
+    padding: 20px;
+    border-bottom: 1px solid #243b4d;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.nf-panel-header strong {
+    font-size: 16px;
+}
+
+.nf-unread {
+    color: #43dca5;
+    font-size: 12px;
+}
+
+.nf-item {
+    padding: 20px;
+    display: flex;
+    gap: 15px;
+    border-bottom: 1px solid #243b4d;
+    transition: background .2s;
+}
+
+.nf-item:last-child {
+    border-bottom: none;
+}
+
+.nf-item.unread {
+    background: #12323a;
+}
+
+.nf-icon {
+    width: 45px;
+    height: 45px;
+    flex-shrink: 0;
+    background: #1c4c40;
+    color: #43dca5;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    font-size: 21px;
+    font-weight: bold;
+}
+
+.nf-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.nf-title {
+    font-size: 14px;
+    font-weight: 750;
+    margin-bottom: 8px;
+}
+
+.nf-message {
+    color: #b5cbd6;
+    font-size: 12px;
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+}
+
+.nf-date {
+    color: #7896a7;
+    font-size: 11px;
+    margin-top: 10px;
+}
+
+.nf-read-button {
+    background: transparent;
+    border: 1px solid #365264;
+    color: #43dca5;
+    border-radius: 7px;
+    padding: 8px 12px;
+    font-size: 11px;
+    cursor: pointer;
+    align-self: center;
+}
+
+.nf-read-button:hover {
+    background: #173e35;
+}
+
+.nf-empty {
+    padding: 70px 20px;
+    text-align: center;
+    color: #94adbd;
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+.nf-back {
+    display: inline-block;
+    margin-top: 25px;
+    color: #43dca5;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+@media (max-width: 600px) {
+    .nf-page {
+        padding: 20px 12px;
+    }
+
+    .nf-item {
+        padding: 15px;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .nf-read-button {
+        margin-left: 55px;
+    }
+
+    .nf-push-panel {
+        padding: 17px;
+    }
+
+    .nf-push-controls {
+        width: 100%;
+    }
+
+    .nf-push-controls .nf-button {
+        flex: 1;
+    }
+}
+</style>
+
+<div class="nf-page">
+    <div class="nf-container">
+
+        <div class="nf-header">
+            <div>
+                <h1>Notifications</h1>
+                <p class="nf-subtitle">
+                    Stay updated with your EVCharge Nexus
+                    reservations and charging reminders.
+                </p>
+            </div>
+
+            <div class="nf-actions">
+                <button
+                    class="nf-button"
+                    id="nf-mark-all"
+                    type="button"
+                >
+                    Mark All as Read
+                </button>
+            </div>
+        </div>
+
+        <!-- WEB PUSH NOTIFICATIONS -->
+        <div class="nf-push-panel">
+            <div class="nf-push-info">
+                <div class="nf-push-heading">
+                    <span class="nf-push-icon">🔔</span>
+                    Phone & Browser Notifications
+                </div>
+
+                <div class="nf-push-description">
+                    Receive reservation confirmations,
+                    cancellations and charging reminders
+                    on supported devices, even when this
+                    page is closed.
+                </div>
+
+                <div
+                    id="nf-push-status"
+                    class="nf-push-status"
+                    role="status"
+                    aria-live="polite"
+                >
+                    Checking notification availability...
+                </div>
+            </div>
+
+            <div class="nf-push-controls">
+                <button
+                    class="nf-button"
+                    id="nf-enable-push"
+                    type="button"
+                >
+                    Enable Notifications
+                </button>
+
+                <button
+                    class="nf-button secondary"
+                    id="nf-disable-push"
+                    type="button"
+                    hidden
+                >
+                    Disable
+                </button>
+            </div>
+        </div>
+
+        <!-- EXISTING NOTIFICATION HISTORY -->
+        <div class="nf-panel">
+            <div class="nf-panel-header">
+                <strong>All Notifications</strong>
+
+                <span
+                    class="nf-unread"
+                    id="nf-unread-count"
+                >
+                    Loading...
+                </span>
+            </div>
+
+            <div id="nf-list">
+                <div class="nf-empty">
+                    Loading your notifications...
+                </div>
+            </div>
+        </div>
+
+        <a
+            class="nf-back"
+            href="{{ url_for('dashboard') }}"
+        >
+            ← Back to Dashboard
+        </a>
+
+    </div>
+</div>
+
+<script>
+(() => {
+    "use strict";
+
+    const list = document.getElementById("nf-list");
+    const count = document.getElementById("nf-unread-count");
+    const markAll = document.getElementById("nf-mark-all");
+
+    const enablePush = document.getElementById("nf-enable-push");
+    const disablePush = document.getElementById("nf-disable-push");
+    const pushStatus = document.getElementById("nf-push-status");
+
+    let notifications = [];
+
+    function createElement(tag, className, text) {
+        const element = document.createElement(tag);
+
+        if (className) {
+            element.className = className;
+        }
+
+        if (text !== undefined) {
+            element.textContent = String(text);
+        }
+
+        return element;
+    }
+
+    function formatDate(value) {
+        const date = new Date(value);
+
+        if (Number.isNaN(date.getTime())) {
+            return "Date unavailable";
+        }
+
+        return date.toLocaleString("en-PK", {
+            timeZone: "Asia/Karachi",
+            dateStyle: "medium",
+            timeStyle: "short"
+        });
+    }
+
+    function iconFor(kind) {
+        if (kind === "confirmed") return "✓";
+        if (kind === "cancelled") return "×";
+        if (kind === "reminder") return "⏰";
+        return "🔔";
+    }
+
+    function render() {
+        list.replaceChildren();
+
+        const unread = notifications.filter(
+            notification => !notification.is_read
+        ).length;
+
+        count.textContent = unread + " Unread";
+        markAll.disabled = unread === 0;
+
+        if (!notifications.length) {
+            list.append(
+                createElement(
+                    "div",
+                    "nf-empty",
+                    "No notifications yet. Booking updates will appear here."
+                )
+            );
+            return;
+        }
+
+        notifications.forEach(notification => {
+            const item = createElement(
+                "div",
+                "nf-item" + (
+                    notification.is_read ? "" : " unread"
+                )
+            );
+
+            const icon = createElement(
+                "div",
+                "nf-icon",
+                iconFor(notification.kind)
+            );
+
+            const content = createElement(
+                "div",
+                "nf-content"
+            );
+
+            content.append(
+                createElement(
+                    "div",
+                    "nf-title",
+                    notification.title
+                ),
+                createElement(
+                    "div",
+                    "nf-message",
+                    notification.message
+                ),
+                createElement(
+                    "div",
+                    "nf-date",
+                    formatDate(notification.created_at)
+                )
+            );
+
+            item.append(icon, content);
+
+            if (!notification.is_read) {
+                const button = createElement(
+                    "button",
+                    "nf-read-button",
+                    "Mark as Read"
+                );
+
+                button.type = "button";
+
+                button.addEventListener(
+                    "click",
+                    () => markRead(notification.id)
+                );
+
+                item.append(button);
+            }
+
+            list.append(item);
+        });
+    }
+
+    async function loadNotifications() {
+        try {
+            const response = await fetch(
+                "/api/notifications",
+                {
+                    credentials: "same-origin",
+                    headers: {
+                        Accept: "application/json"
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error("Unable to load notifications");
+            }
+
+            const data = await response.json();
+
+            notifications = Array.isArray(data.notifications)
+                ? data.notifications
+                : [];
+
+            render();
+
+        } catch (error) {
+            console.error(error);
+
+            list.replaceChildren(
+                createElement(
+                    "div",
+                    "nf-empty",
+                    "Unable to load notifications. Please refresh."
+                )
+            );
+        }
+    }
+
+    async function markRead(id) {
+        try {
+            const response = await fetch(
+                `/api/notifications/${id}/read`,
+                {
+                    method: "POST",
+                    credentials: "same-origin",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: "{}"
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error("Unable to update notification");
+            }
+
+            await loadNotifications();
+
+        } catch (error) {
+            console.error(error);
+            alert("Could not mark notification as read.");
+        }
+    }
+
+    markAll.addEventListener("click", async () => {
+        markAll.disabled = true;
+
+        try {
+            const response = await fetch(
+                "/api/notifications/read-all",
+                {
+                    method: "POST",
+                    credentials: "same-origin",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: "{}"
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error("Unable to mark all as read");
+            }
+
+            await loadNotifications();
+
+        } catch (error) {
+            console.error(error);
+            alert("Could not update notifications.");
+            markAll.disabled = false;
+        }
+    });
+
+    // ======================================
+    // WEB PUSH NOTIFICATIONS
+    // ======================================
+
+    function setPushStatus(message, type = "") {
+        pushStatus.textContent = message;
+        pushStatus.className = "nf-push-status";
+
+        if (type) {
+            pushStatus.classList.add(type);
+        }
+    }
+
+    function pushSupported() {
+        return (
+            "serviceWorker" in navigator &&
+            "PushManager" in window &&
+            "Notification" in window
+        );
+    }
+
+    function urlBase64ToUint8Array(base64String) {
+        const padding = "=".repeat(
+            (4 - base64String.length % 4) % 4
+        );
+
+        const base64 = (
+            base64String + padding
+        ).replace(/-/g, "+").replace(/_/g, "/");
+
+        const raw = atob(base64);
+
+        return Uint8Array.from(
+            raw,
+            character => character.charCodeAt(0)
+        );
+    }
+
+    async function getPushRegistration() {
+        const existing = await navigator.serviceWorker
+            .getRegistration("/");
+
+        if (existing) {
+            return existing;
+        }
+
+        return navigator.serviceWorker.register(
+            "/sw.js",
+            { scope: "/" }
+        );
+    }
+
+    async function refreshPushStatus() {
+        if (!pushSupported()) {
+            setPushStatus(
+                "Web Push is not supported in this browser.",
+                "error"
+            );
+
+            enablePush.disabled = true;
+            disablePush.hidden = true;
+            return;
+        }
+
+        if (!window.isSecureContext) {
+            setPushStatus(
+                "HTTPS is required to enable phone notifications.",
+                "error"
+            );
+
+            enablePush.disabled = true;
+            disablePush.hidden = true;
+            return;
+        }
+
+        if (Notification.permission === "denied") {
+            setPushStatus(
+                "Notifications are blocked. Change permission in your browser settings.",
+                "error"
+            );
+
+            enablePush.disabled = true;
+            disablePush.hidden = true;
+            return;
+        }
+
+        try {
+            const registration = await navigator.serviceWorker
+                .getRegistration("/");
+
+            const subscription = registration
+                ? await registration.pushManager.getSubscription()
+                : null;
+
+            if (subscription) {
+                setPushStatus(
+                    "Push notifications are enabled on this device.",
+                    "success"
+                );
+
+                enablePush.textContent = "Enabled ✓";
+                enablePush.disabled = true;
+                disablePush.hidden = false;
+            } else {
+                setPushStatus(
+                    "Push notifications are not enabled on this device."
+                );
+
+                enablePush.textContent = "Enable Notifications";
+                enablePush.disabled = false;
+                disablePush.hidden = true;
+            }
+
+        } catch (error) {
+            console.error(error);
+            setPushStatus(
+                "Unable to check push notification status.",
+                "error"
+            );
+        }
+    }
+
+    async function enablePhoneNotifications() {
+        if (!pushSupported() || !window.isSecureContext) {
+            await refreshPushStatus();
+            return;
+        }
+
+        enablePush.disabled = true;
+        enablePush.textContent = "Setting up...";
+
+        try {
+            // Fetch the server's public VAPID key.
+            const keyResponse = await fetch(
+                "/api/push/public-key",
+                {
+                    credentials: "same-origin"
+                }
+            );
+
+            if (!keyResponse.ok) {
+                throw new Error(
+                    "Push server is not configured. Check your VAPID public key."
+                );
+            }
+
+            const keyData = await keyResponse.json();
+
+            if (!keyData.public_key) {
+                throw new Error("VAPID public key is missing.");
+            }
+
+            // Ask the user for notification permission.
+            const permission =
+                await Notification.requestPermission();
+
+            if (permission !== "granted") {
+                throw new Error(
+                    "Notification permission was not granted."
+                );
+            }
+
+            // Register the service worker.
+            const registration =
+                await getPushRegistration();
+
+            await navigator.serviceWorker.ready;
+
+            let subscription =
+                await registration.pushManager.getSubscription();
+
+            if (!subscription) {
+                subscription =
+                    await registration.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey:
+                            urlBase64ToUint8Array(
+                                keyData.public_key
+                            )
+                    });
+            }
+
+            // Save subscription to Flask/SQLite.
+            const response = await fetch(
+                "/api/push/subscribe",
+                {
+                    method: "POST",
+                    credentials: "same-origin",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(
+                        subscription.toJSON()
+                    )
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(
+                    "Unable to save your push subscription."
+                );
+            }
+
+            setPushStatus(
+                "Push notifications successfully enabled!",
+                "success"
+            );
+
+            enablePush.textContent = "Enabled ✓";
+            enablePush.disabled = true;
+            disablePush.hidden = false;
+
+        } catch (error) {
+            console.error(error);
+
+            setPushStatus(error.message, "error");
+
+            enablePush.textContent = "Enable Notifications";
+            enablePush.disabled = false;
+        }
+    }
+
+    async function disablePhoneNotifications() {
+        disablePush.disabled = true;
+
+        try {
+            const registration = await navigator.serviceWorker
+                .getRegistration("/");
+
+            const subscription = registration
+                ? await registration.pushManager.getSubscription()
+                : null;
+
+            if (subscription) {
+                const response = await fetch(
+                    "/api/push/unsubscribe",
+                    {
+                        method: "POST",
+                        credentials: "same-origin",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            endpoint: subscription.endpoint
+                        })
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(
+                        "Unable to remove push subscription from server."
+                    );
+                }
+
+                const removed = await subscription.unsubscribe();
+
+                if (!removed) {
+                    throw new Error(
+                        "Browser could not disable the subscription."
+                    );
+                }
+            }
+
+            await refreshPushStatus();
+
+            setPushStatus(
+                "Push notifications disabled on this device.",
+                "success"
+            );
+
+        } catch (error) {
+            console.error(error);
+
+            setPushStatus(error.message, "error");
+
+        } finally {
+            disablePush.disabled = false;
+        }
+    }
+
+    enablePush.addEventListener(
+        "click",
+        enablePhoneNotifications
+    );
+
+    disablePush.addEventListener(
+        "click",
+        disablePhoneNotifications
+    );
+
+    // INITIALIZE PAGE
+    loadNotifications();
+    refreshPushStatus();
+
+})();
+</script>
+
+{% endblock %}

@@ -1,0 +1,375 @@
+{
+  "BYD": [
+    "Atto 2",
+    "Atto 3",
+    "Dolphin",
+    "Dolphin Mini",
+    "Seal",
+    "Sealion 6",
+    "Sealion 7",
+    "Han",
+    "Tang",
+    "Yuan Plus",
+    "Seagull"
+  ],
+  "Deepal": [
+    "S05",
+    "S07",
+    "L07",
+    "SL03",
+    "G318"
+  ],
+  "MG": [
+    "MG4 EV",
+    "ZS EV",
+    "MG5 EV",
+    "Marvel R",
+    "Cyberster",
+    "MGS5 EV"
+  ],
+  "Hyundai": [
+    "IONIQ 5",
+    "IONIQ 6",
+    "Kona Electric",
+    "IONIQ 9",
+    "Inster"
+  ],
+  "Kia": [
+    "EV3",
+    "EV4",
+    "EV5",
+    "EV6",
+    "EV9",
+    "Niro EV",
+    "Soul EV"
+  ],
+  "Tesla": [
+    "Model 3",
+    "Model Y",
+    "Model S",
+    "Model X",
+    "Cybertruck"
+  ],
+  "BMW": [
+    "i3",
+    "i4",
+    "i5",
+    "i7",
+    "iX",
+    "iX1",
+    "iX2",
+    "iX3"
+  ],
+  "Mercedes-Benz": [
+    "EQA",
+    "EQB",
+    "EQC",
+    "EQE",
+    "EQS",
+    "EQE SUV",
+    "EQS SUV",
+    "G 580 EQ"
+  ],
+  "Audi": [
+    "Q4 e-tron",
+    "Q6 e-tron",
+    "Q8 e-tron",
+    "e-tron GT",
+    "A6 e-tron"
+  ],
+  "Porsche": [
+    "Taycan",
+    "Macan Electric"
+  ],
+  "Volkswagen": [
+    "ID.3",
+    "ID.4",
+    "ID.5",
+    "ID.7",
+    "ID. Buzz"
+  ],
+  "Nissan": [
+    "Leaf",
+    "Ariya",
+    "Sakura"
+  ],
+  "Toyota": [
+    "bZ4X",
+    "bZ3",
+    "bZ3X"
+  ],
+  "Honda": [
+    "e:Ny1",
+    "Honda e",
+    "Prologue"
+  ],
+  "Volvo": [
+    "EX30",
+    "EX40",
+    "EC40",
+    "EX90",
+    "ES90"
+  ],
+  "Polestar": [
+    "Polestar 2",
+    "Polestar 3",
+    "Polestar 4"
+  ],
+  "Zeekr": [
+    "001",
+    "007",
+    "009",
+    "X",
+    "7X"
+  ],
+  "XPeng": [
+    "G6",
+    "G9",
+    "P7",
+    "P7+",
+    "X9"
+  ],
+  "NIO": [
+    "ET5",
+    "ET7",
+    "ES6",
+    "ES8",
+    "EC6",
+    "EC7"
+  ],
+  "Changan": [
+    "Lumin",
+    "Eado EV",
+    "BenBen E-Star"
+  ],
+  "GAC Aion": [
+    "Aion Y",
+    "Aion S",
+    "Aion V",
+    "Aion UT",
+    "Hyptec HT"
+  ],
+  "Geely": [
+    "Geometry C",
+    "EX5",
+    "Galaxy E5"
+  ],
+  "JAC": [
+    "E-JS1",
+    "E-JS4",
+    "iEV7S"
+  ],
+  "ORA": [
+    "Good Cat",
+    "Funky Cat",
+    "Lightning Cat",
+    "07"
+  ],
+  "Wuling": [
+    "Air EV",
+    "Mini EV",
+    "Bingo EV",
+    "Bingo Plus"
+  ],
+  "Leapmotor": [
+    "T03",
+    "C10",
+    "C11",
+    "C16"
+  ],
+  "Chery": [
+    "Omoda E5",
+    "eQ1",
+    "eQ7"
+  ],
+  "Jaecoo": [
+    "J6 EV"
+  ],
+  "JMEV": [
+    "EV3",
+    "EX5"
+  ],
+  "Seres": [
+    "3",
+    "5"
+  ],
+  "Skywell": [
+    "ET5",
+    "BE11"
+  ],
+  "Rivian": [
+    "R1T",
+    "R1S"
+  ],
+  "Ford": [
+    "Mustang Mach-E",
+    "F-150 Lightning",
+    "Explorer EV"
+  ],
+  "Chevrolet": [
+    "Bolt EV",
+    "Bolt EUV",
+    "Equinox EV",
+    "Blazer EV",
+    "Silverado EV"
+  ],
+  "Lucid": [
+    "Air",
+    "Gravity"
+  ],
+  "Fiat": [
+    "500e",
+    "600e"
+  ],
+  "Peugeot": [
+    "e-208",
+    "e-2008",
+    "e-308",
+    "e-3008"
+  ],
+  "Renault": [
+    "Zoe",
+    "Megane E-Tech",
+    "Scenic E-Tech",
+    "5 E-Tech"
+  ],
+  "Mini": [
+    "Cooper Electric",
+    "Countryman Electric",
+    "Aceman"
+  ],
+  "Jaguar": [
+    "I-PACE"
+  ],
+  "Land Rover": [
+    "Range Rover Electric"
+  ],
+  "Subaru": [
+    "Solterra"
+  ],
+  "Mazda": [
+    "MX-30"
+  ],
+  "Smart": [
+    "#1",
+    "#3",
+    "#5"
+  ],
+  "VinFast": [
+    "VF 3",
+    "VF 5",
+    "VF 6",
+    "VF 7",
+    "VF 8",
+    "VF 9"
+  ],
+  "Genesis": [
+    "GV60",
+    "Electrified G80",
+    "Electrified GV70"
+  ],
+  "Cadillac": [
+    "Lyriq",
+    "Optiq",
+    "Escalade IQ"
+  ],
+  "GMC": [
+    "Hummer EV"
+  ],
+  "Avatr": [
+    "07",
+    "11",
+    "12"
+  ],
+  "Denza": [
+    "D9",
+    "N7",
+    "Z9 GT"
+  ],
+  "Chery iCar": [
+    "03",
+    "V23"
+  ],
+  "BAIC": [
+    "EU5",
+    "EX5",
+    "Arcfox Alpha T",
+    "Arcfox Alpha S"
+  ],
+  "JAC Yiwei": [
+    "3"
+  ],
+  "IM Motors": [
+    "L6",
+    "LS6",
+    "LS7"
+  ],
+  "Xiaomi": [
+    "SU7",
+    "YU7"
+  ],
+  "Lotus": [
+    "Eletre",
+    "Emeya"
+  ],
+  "Opel": [
+    "Corsa Electric",
+    "Mokka Electric",
+    "Astra Electric"
+  ],
+  "Skoda": [
+    "Enyaq",
+    "Elroq"
+  ],
+  "Cupra": [
+    "Born",
+    "Tavascan"
+  ],
+  "Citroen": [
+    "e-C3",
+    "e-C4",
+    "e-Berlingo"
+  ],
+  "BYD Fangchengbao": [
+    "Bao 5",
+    "Bao 8"
+  ],
+  "Riddara": [
+    "RD6"
+  ],
+  "Changan Nevo": [
+    "A05",
+    "A07",
+    "Q05"
+  ],
+  "Arcfox": [
+    "Alpha S",
+    "Alpha T",
+    "Kaola"
+  ],
+  "Farizon": [
+    "SuperVan",
+    "V6E"
+  ],
+  "Jinpeng": [
+    "Mini EV"
+  ],
+  "Baw": [
+    "Pony"
+  ],
+  "Roewe": [
+    "Ei5",
+    "D7 EV"
+  ],
+  "Baojun": [
+    "Yep",
+    "Cloud EV",
+    "KiWi EV"
+  ],
+  "Firefly": [
+    "Firefly"
+  ],
+  "Onvo": [
+    "L60"
+  ]
+}

@@ -1,0 +1,612 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>{% block title %}EVCharge Nexus{% endblock %}</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --sidebar-collapsed: 78px;
+            --nexus-bg: #08131f;
+            --nexus-panel: #0e2030;
+            --nexus-border: #243b4d;
+            --nexus-green: #43dca5;
+            --nexus-muted: #94adbd;
+        }
+
+        body.nexus-app {
+            margin: 0;
+            background: var(--nexus-bg);
+        }
+
+        /* APP SIDEBAR */
+
+        .nexus-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: var(--sidebar-width);
+            box-sizing: border-box;
+            background: #0c1b2a;
+            border-right: 1px solid var(--nexus-border);
+            z-index: 1100;
+            display: flex;
+            flex-direction: column;
+            transition: width .25s ease, transform .25s ease;
+        }
+
+        .nexus-sidebar-brand {
+            min-height: 78px;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--nexus-border);
+            text-decoration: none;
+            color: #f0f9fc;
+            font-size: 17px;
+            font-weight: 800;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .nexus-logo {
+            width: 38px;
+            height: 38px;
+            flex-shrink: 0;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            color: #06291e;
+            background: var(--nexus-green);
+            font-size: 21px;
+        }
+
+        .nexus-brand-name span {
+            color: var(--nexus-green);
+        }
+
+        .nexus-sidebar-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px 12px;
+        }
+
+        .nexus-menu-label {
+            margin: 0 12px 12px;
+            color: #69899d;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 1.8px;
+        }
+
+        .nexus-nav-link {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-height: 46px;
+            padding: 10px 13px;
+            margin-bottom: 5px;
+            box-sizing: border-box;
+            border-radius: 10px;
+            color: #afc4d2;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 650;
+            transition: background .2s, color .2s;
+            white-space: nowrap;
+        }
+
+        .nexus-nav-link:hover {
+            background: #193346;
+            color: #fff;
+        }
+
+        .nexus-nav-link.active {
+            background: #173e35;
+            color: var(--nexus-green);
+        }
+
+        .nexus-nav-icon {
+            width: 23px;
+            flex-shrink: 0;
+            text-align: center;
+            font-size: 19px;
+        }
+
+        .nexus-nav-text {
+            overflow: hidden;
+        }
+
+        .nexus-sidebar-bottom {
+            border-top: 1px solid var(--nexus-border);
+            padding: 15px 12px 20px;
+        }
+
+        .nexus-user {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 12px;
+            margin-bottom: 10px;
+            min-width: 0;
+        }
+
+        .nexus-avatar {
+            display: grid;
+            place-items: center;
+            width: 37px;
+            height: 37px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            background: #23483e;
+            color: var(--nexus-green);
+            font-size: 17px;
+            font-weight: 800;
+        }
+
+        .nexus-user-details {
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .nexus-user-details strong {
+            display: block;
+            color: #f1f8fc;
+            font-size: 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .nexus-user-details small {
+            color: #839eaf;
+            font-size: 11px;
+        }
+
+        .nexus-logout-form {
+            margin: 0;
+        }
+
+        .nexus-logout {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+            text-align: left;
+            font-family: inherit;
+            color: #ff9caa;
+        }
+
+        .nexus-logout:hover {
+            color: #ffc3cb;
+            background: #392532;
+        }
+
+        /* MAIN CONTENT */
+
+        .nexus-main-shell {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            min-width: 0;
+            transition: margin-left .25s ease;
+        }
+
+        .nexus-top-header {
+            height: 72px;
+            padding: 0 30px;
+            box-sizing: border-box;
+            background: #0c1b2a;
+            border-bottom: 1px solid var(--nexus-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .nexus-header-left {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .nexus-menu-toggle {
+            border: 1px solid #2c4659;
+            border-radius: 10px;
+            width: 40px;
+            height: 40px;
+            background: #142c3e;
+            color: #e9f4fa;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .nexus-menu-toggle:hover {
+            background: #1b394d;
+        }
+
+        .nexus-header-title {
+            color: #e9f4fa;
+            font-size: 15px;
+            font-weight: 750;
+        }
+
+        .nexus-header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #a8bdca;
+            font-size: 12px;
+        }
+
+        .nexus-header-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--nexus-green);
+        }
+
+        .nexus-main-shell > footer {
+            background: #0c1b2a;
+            border-top: 1px solid var(--nexus-border);
+            padding: 22px;
+            text-align: center;
+            color: #8098a8;
+            font-size: 12px;
+        }
+
+        /* COLLAPSED DESKTOP SIDEBAR */
+
+        @media (min-width: 901px) {
+            body.sidebar-collapsed .nexus-sidebar {
+                width: var(--sidebar-collapsed);
+            }
+
+            body.sidebar-collapsed .nexus-main-shell {
+                margin-left: var(--sidebar-collapsed);
+            }
+
+            body.sidebar-collapsed .nexus-brand-name,
+            body.sidebar-collapsed .nexus-menu-label,
+            body.sidebar-collapsed .nexus-nav-text,
+            body.sidebar-collapsed .nexus-user-details {
+                display: none;
+            }
+
+            body.sidebar-collapsed .nexus-sidebar-brand {
+                justify-content: center;
+                padding: 0;
+            }
+
+            body.sidebar-collapsed .nexus-nav-link {
+                justify-content: center;
+                padding: 10px;
+            }
+
+            body.sidebar-collapsed .nexus-user {
+                justify-content: center;
+            }
+        }
+
+        /* MOBILE SIDEBAR */
+
+        .nexus-overlay {
+            display: none;
+        }
+
+        @media (max-width: 900px) {
+            .nexus-sidebar {
+                width: 260px;
+                transform: translateX(-100%);
+            }
+
+            body.sidebar-open .nexus-sidebar {
+                transform: translateX(0);
+            }
+
+            .nexus-main-shell {
+                margin-left: 0;
+            }
+
+            .nexus-top-header {
+                padding: 0 18px;
+            }
+
+            .nexus-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, .65);
+                z-index: 1050;
+            }
+
+            body.sidebar-open .nexus-overlay {
+                display: block;
+            }
+
+            body.sidebar-open {
+                overflow: hidden;
+            }
+        }
+
+        @media (max-width: 500px) {
+            .nexus-header-right {
+                display: none;
+            }
+        }
+
+        .nexus-nav-link:focus-visible,
+        .nexus-menu-toggle:focus-visible {
+            outline: 2px solid var(--nexus-green);
+            outline-offset: 3px;
+        }
+    </style>
+</head>
+
+<body class="{% if current_user_name %}nexus-app{% endif %}">
+
+{% if current_user_name %}
+
+    <!-- SIDEBAR -->
+
+    <aside class="nexus-sidebar" id="nexus-sidebar">
+
+        <a class="nexus-sidebar-brand"
+           href="{{ url_for('dashboard') }}">
+
+            <span class="nexus-logo">⚡</span>
+
+            <span class="nexus-brand-name">
+                EVCharge <span>Nexus</span>
+            </span>
+        </a>
+
+        <div class="nexus-sidebar-scroll">
+
+            <div class="nexus-menu-label">MAIN MENU</div>
+
+            <nav aria-label="Application navigation">
+
+                <a class="nexus-nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}"
+                   href="{{ url_for('dashboard') }}"
+                   title="Dashboard"
+                   {% if request.endpoint == 'dashboard' %}aria-current="page"{% endif %}>
+                    <span class="nexus-nav-icon">▦</span>
+                    <span class="nexus-nav-text">Dashboard</span>
+                </a>
+
+                <a class="nexus-nav-link {% if request.endpoint == 'station_map' %}active{% endif %}"
+                   href="{{ url_for('station_map') }}"
+                   title="Explore Stations"
+                   {% if request.endpoint == 'station_map' %}aria-current="page"{% endif %}>
+                    <span class="nexus-nav-icon">⌖</span>
+                    <span class="nexus-nav-text">Explore Stations</span>
+                </a>
+
+                <a class="nexus-nav-link {% if request.endpoint == 'reservations' %}active{% endif %}"
+                   href="{{ url_for('reservations') }}"
+                   title="Book Charging"
+                   {% if request.endpoint == 'reservations' %}aria-current="page"{% endif %}>
+                    <span class="nexus-nav-icon">⚡</span>
+                    <span class="nexus-nav-text">Book Charging</span>
+                </a>
+
+                <a class="nexus-nav-link {% if request.endpoint == 'reservations_backend.my_reservations_page' %}active{% endif %}"
+                   href="{{ url_for('reservations_backend.my_reservations_page') }}"
+                   title="My Reservations"
+                   {% if request.endpoint == 'reservations_backend.my_reservations_page' %}aria-current="page"{% endif %}>
+                    <span class="nexus-nav-icon">▤</span>
+                    <span class="nexus-nav-text">My Reservations</span>
+                </a>
+
+                <a class="nexus-nav-link {% if request.endpoint == 'vehicles' %}active{% endif %}"
+                   href="{{ url_for('vehicles') }}"
+                   title="My Vehicles"
+                   {% if request.endpoint == 'vehicles' %}aria-current="page"{% endif %}>
+                    <span class="nexus-nav-icon">🚘</span>
+                    <span class="nexus-nav-text">My Vehicles</span>
+                </a>
+
+            </nav>
+        </div>
+
+        <!-- USER ACCOUNT -->
+
+        <div class="nexus-sidebar-bottom">
+
+            <div class="nexus-user">
+
+                <div class="nexus-avatar">
+                    {{ current_user_name[0]|upper }}
+                </div>
+
+                <div class="nexus-user-details">
+                    <strong>{{ current_user_name }}</strong>
+                    <small>EVCharge Member</small>
+                </div>
+
+            </div>
+
+            <form class="nexus-logout-form"
+                  action="{{ url_for('logout') }}"
+                  method="post">
+
+                <button type="submit"
+                        class="nexus-nav-link nexus-logout"
+                        title="Log out">
+
+                    <span class="nexus-nav-icon">⇥</span>
+                    <span class="nexus-nav-text">Log out</span>
+
+                </button>
+            </form>
+        </div>
+
+    </aside>
+
+    <!-- MOBILE OVERLAY -->
+
+    <div class="nexus-overlay"
+         id="nexus-overlay"
+         aria-hidden="true"></div>
+
+    <!-- MAIN APP AREA -->
+
+    <div class="nexus-main-shell">
+
+        <header class="nexus-top-header">
+
+            <div class="nexus-header-left">
+
+                <button class="nexus-menu-toggle"
+                        id="nexus-menu-toggle"
+                        type="button"
+                        aria-label="Toggle navigation"
+                        aria-controls="nexus-sidebar"
+                        aria-expanded="true">
+                    ☰
+                </button>
+
+                <span class="nexus-header-title">
+                    EVCharge Nexus
+                </span>
+
+            </div>
+
+            <div class="nexus-header-right">
+                <span class="nexus-header-indicator"></span>
+                <span>Account active</span>
+            </div>
+
+        </header>
+
+{% else %}
+
+    <!-- PUBLIC NAVIGATION -->
+
+    <header class="topbar">
+
+        <a class="brand" href="{{ url_for('home') }}">
+            <span class="bolt">⚡</span>
+            EVCharge <span>Nexus</span>
+        </a>
+
+        <nav class="navigation">
+
+            <a href="{{ url_for('login') }}">
+                Explore stations
+            </a>
+
+            <a href="{{ url_for('login') }}">
+                Sign in
+            </a>
+
+            <a class="nav-cta"
+               href="{{ url_for('signup') }}">
+                Get started →
+            </a>
+
+        </nav>
+
+    </header>
+
+{% endif %}
+
+    <!-- FLASH MESSAGES -->
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+
+        {% if messages %}
+
+            <div class="flash-wrap">
+
+                {% for category, message in messages %}
+
+                    <div class="flash {{ category }}"
+                         role="alert">
+                        {{ message }}
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% endif %}
+
+    {% endwith %}
+
+    <!-- PAGE CONTENT -->
+
+    {% block content %}
+    {% endblock %}
+
+    <!-- FOOTER -->
+
+    <footer>
+        © EVCharge Nexus · EV charging management platform
+    </footer>
+
+{% if current_user_name %}
+    </div>
+{% endif %}
+
+<script>
+(() => {
+    const toggle = document.getElementById("nexus-menu-toggle");
+    const overlay = document.getElementById("nexus-overlay");
+
+    if (!toggle) return;
+
+    const mobileQuery = window.matchMedia("(max-width: 900px)");
+
+    function updateExpanded() {
+        const expanded = mobileQuery.matches
+            ? document.body.classList.contains("sidebar-open")
+            : !document.body.classList.contains("sidebar-collapsed");
+
+        toggle.setAttribute("aria-expanded", String(expanded));
+    }
+
+    toggle.addEventListener("click", () => {
+        if (mobileQuery.matches) {
+            document.body.classList.toggle("sidebar-open");
+        } else {
+            document.body.classList.toggle("sidebar-collapsed");
+        }
+
+        updateExpanded();
+    });
+
+    if (overlay) {
+        overlay.addEventListener("click", () => {
+            document.body.classList.remove("sidebar-open");
+            updateExpanded();
+        });
+    }
+
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape") {
+            document.body.classList.remove("sidebar-open");
+            updateExpanded();
+        }
+    });
+
+    mobileQuery.addEventListener("change", () => {
+        document.body.classList.remove("sidebar-open");
+        updateExpanded();
+    });
+
+    updateExpanded();
+})();
+</script>
+
+</body>
+</html>

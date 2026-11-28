@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}My Vehicles · EVCharge Nexus{% endblock %}
+{% block content %}
+<main class="container vehicle-page">
+ <div class="eyebrow">YOUR EV GARAGE</div><h1>My <em>Vehicles.</em></h1>
+ <p class="note">Add your EV to calculate charging needs and prepare for compatible station recommendations.</p>
+ <div class="vehicle-grid"><section class="vehicle-surface">
+  <div class="eyebrow">NEW VEHICLE</div><h2>Add an electric vehicle</h2>
+  <form method="post" class="vehicle-form">
+   <div class="vehicle-fields"><div><label for="manufacturer">Manufacturer</label><input id="manufacturer" name="manufacturer" list="manufacturer-options" maxlength="70" required placeholder="Search brand (e.g. BYD)" autocomplete="off" value="{{ request.form.get('manufacturer','') }}"><datalist id="manufacturer-options"></datalist></div>
+   <div><label for="model">Model</label><input id="model" name="model" list="model-options" maxlength="70" required placeholder="Choose or type a model" autocomplete="off" value="{{ request.form.get('model','') }}"><datalist id="model-options"></datalist></div></div>
+   <p class="catalog-help" id="catalog-help">Search a brand, then choose its model. You can also type a custom vehicle.</p><div class="vehicle-fields"><div><label for="battery_kwh">Battery capacity (kWh)</label><input id="battery_kwh" name="battery_kwh" type="number" min="1" max="300" step="0.1" required placeholder="e.g. 72.6" value="{{ request.form.get('battery_kwh','') }}"></div>
+   <div><label for="connector">Connector type</label><select id="connector" name="connector" required><option value="">Select connector</option>{% for c in connectors %}<option value="{{ c }}" {% if request.form.get('connector') == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div></div>
+   <div class="vehicle-fields"><div><label for="current_soc">Current battery (%)</label><input id="current_soc" name="current_soc" type="number" min="0" max="99" required placeholder="e.g. 30" value="{{ request.form.get('current_soc','') }}"></div>
+   <div><label for="target_soc">Target battery (%)</label><input id="target_soc" name="target_soc" type="number" min="1" max="100" required placeholder="e.g. 80" value="{{ request.form.get('target_soc','80') }}"></div></div>
+   <p class="catalog-help">Battery capacity and connector type must be checked against your vehicle’s exact year, trim, and Pakistan/import specification.</p><button class="button full" type="submit">+ Save vehicle</button>
+  </form><p class="vehicle-hint">Estimates exclude charging losses and changing charging speeds.</p>
+ </section><section class="vehicle-surface"><div class="eyebrow">SAVED PROFILES</div><h2>Your garage <span class="vehicle-count">{{ vehicles|length }}</span></h2>
+ {% if vehicles %}{% for v in vehicles %}<article class="vehicle-card"><div class="vehicle-card-head"><div><div class="vehicle-icon">⚡</div><h3>{{ v.manufacturer }} {{ v.model }}</h3><p>{{ v.connector }} · {{ v.battery_kwh }} kWh battery</p></div><form method="post" action="{{ url_for('delete_vehicle',vehicle_id=v.id) }}" onsubmit="return confirm('Remove this vehicle?')"><button type="submit" class="vehicle-delete">Remove</button></form></div>
+ <div class="battery-row"><span>Current {{ v.current_soc }}%</span><span>Target {{ v.target_soc }}%</span></div><div class="battery-track"><div class="battery-fill" style="width:{{ v.current_soc }}%"></div></div>
+ <div class="energy-estimate"><span>Estimated energy needed</span><strong>{{ '%.1f'|format(v.battery_kwh * (v.target_soc-v.current_soc)/100) }} kWh</strong></div></article>{% endfor %}
+ {% else %}<div class="vehicle-empty"><div>🚘</div><h3>No vehicles yet</h3><p>Add your first electric vehicle to start planning your charging needs.</p></div>{% endif %}
+ </section></div>
+<script src="{{ url_for('static', filename='vehicle_catalog.js') }}" defer></script></main>{% endblock %}
